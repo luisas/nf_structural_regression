@@ -2,7 +2,7 @@
 params.outdir = 'results'
 
 process GENERATE_DYNAMIC_CONFIG {
-    container 'edgano/base:latest'
+    container 'edgano/tcoffee:pdb'
     tag "Config 4 Dynamic"
 
     input:

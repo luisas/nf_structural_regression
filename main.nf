@@ -32,7 +32,7 @@
 /*
  * enables modules
  */
-nextflow.preview.dsl = 2
+nextflow.enable.dsl = 2
 
 /*
  * defaults parameter definitions
@@ -42,9 +42,11 @@ nextflow.preview.dsl = 2
 seq2improve="cryst,blmb,rrm,subt,ghf5,sdr,tRNA-synt_2b,zf-CCHH,egf,Acetyltransf,ghf13,p450,Rhodanese,aat,az,cytb,proteasome,GEL"
 top20fam="gluts,myb_DNA-binding,tRNA-synt_2b,biotin_lipoyl,hom,ghf13,aldosered,hla,Rhodanese,PDZ,blmb,rhv,p450,adh,aat,rrm,Acetyltransf,sdr,zf-CCHH,rvp"
 smallfam="seatoxin,hip"
-params.seqs ="/users/cn/egarriga/datasets/homfam/combinedSeqs/{${smallfam}}.fa"
-params.refs = "/users/cn/lsantus/data/structural_regression/homfam/refs/{${smallfam}}.ref"
-params.trees ="/users/cn/lsantus/data/structural_regression/homfam/trees/{${smallfam}}.FAMSA.dnd"
+//params.dataset_dir="/users/cn/lsantus/"
+params.dataset_dir="/home/luisasantus/Desktop/crg_cluster"
+params.seqs ="${params.dataset_dir}/data/structural_regression/homfam/combinedSeqs/{${smallfam}}.fa"
+params.refs = "${params.dataset_dir}/data/structural_regression/homfam/refs/{${smallfam}}.ref"
+params.trees ="${params.dataset_dir}/data/structural_regression/homfam/trees/{${smallfam}}.FAMSA.dnd"
 
 // input sequences to align in fasta format
 //params.seqs = "/users/cn/lsantus/data/structural_regression/homfam/combinedSeqs/*.fa"
@@ -74,12 +76,18 @@ params.dynamicConfig=true
 params.db = "uniref50"
 
 params.dynamic_align=true
+params.evaluate=true
+
+
+params.blastOutdir="$baseDir/blast"
+
 
 // output directory
 params.outdir = "$baseDir/results"
 
 // define database path
-uniref_path = "/users/cn/egarriga/datasets/db/uniref50.fasta"   // cluster path
+uniref_path = "${params.dataset_dir}/data/structural_regression/db/uniref50.fasta"   // cluster path
+//uniref_path = "/users/cn/egarriga/datasets/db/uniref50.fasta"   // cluster path
 pdb_path = "/database/pdb/pdb_seqres.txt"                       // docker path
 
 if (params.db=='uniref50'){
@@ -108,13 +116,14 @@ log.info """\
                   Dynamic DDBB                          : ${params.db}
                   DDBB path                             : ${params.database_path}
          --##--
+         evaluatr                                       : ${params.evaluate}
          Output directory (DIRECTORY)                   : ${params.outdir}
          """
          .stripIndent()
 
 // import analysis pipelines
-include TREE_GENERATION from './modules/treeGeneration'   params(params)
-include DYNAMIC_ANALYSIS from './modules/reg_analysis'    params(params)
+include { TREE_GENERATION } from './modules/treeGeneration'   params(params)
+include { DYNAMIC_ANALYSIS } from './modules/reg_analysis'    params(params)
 
 // Channels containing sequences
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item] }
@@ -169,6 +178,7 @@ workflow {
 /*
  * completion handler
  */
-workflow.onComplete {
-	log.info ( workflow.success ? "\nDone!\n" : "Oops .. something went wrong" )
-}
+ workflow.onComplete {
+   println (['bash','-c', "$baseDir/bin/cpu_calculate.sh ${params.outdir}/individual_scores"].execute().text)
+   println "Execution status: ${ workflow.success ? 'OK' : 'failed' } runName: ${workflow.runName}"
+ }

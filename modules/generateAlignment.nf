@@ -6,7 +6,8 @@ path_templates = set_templates_path()
 
 process DYNAMIC_ALIGNER {
     container 'edgano/tcoffee:pdb'
-    tag "$align_method - $tree_method on $id"
+    //tag "$align_method - $tree_method on $id"
+    tag "$align_method - $tree_method on $id; ${masterAln}-${masterSize}:${slaveAln}-${slaveSize}"
     publishDir "${params.outdir}/alignments", pattern: '*.aln'
     label 'process_medium'
 
