@@ -1,6 +1,8 @@
 #!/bin/bash nextflow
 params.outdir = 'results'
 
+
+
 process EVAL_COMPRESS {
     container 'edgano/tcoffee:pdb'
     tag "EVAL_COMPRESS on $id"
@@ -76,6 +78,7 @@ process EVAL_COMPRESS {
     """
 }
 
+
 process EVAL_ALIGNMENT {
     container 'edgano/tcoffee:pdb'
     tag "EVAL_ALIGNMENT on $id"
@@ -138,5 +141,134 @@ process EVAL_ALIGNMENT {
             | grep -v "seq1" | grep -v '*' | \
               awk '{ print \$4}' ORS="\t" \
             > "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.col"
+    """
+}
+
+
+process EASEL_INFO {
+    container 'edgano/hmmer:latest'
+    tag "EASEL_INFO on $id"
+    publishDir "${params.outdir}/easel", mode: 'copy', overwrite: true
+
+    input:
+    val align_type
+    tuple  val (id), file (test_alignment)
+    val align_method
+    val tree_method
+    val bucket_size
+
+    output:
+    tuple val(id), \
+    val(align_type), \
+    val(bucket_size), \
+    val(align_method), \
+    val(tree_method), \
+    path("*.easel_INFO"), \
+    path("*.avgLen"), \
+    path("*.avgId"), emit: easelFiles
+
+     shell:
+     '''
+     esl-alistat !{test_alignment} > !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_INFO
+     awk -F : '{ if (\$1=="Average length") printf "%s", \$2}' !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_INFO | sed 's/ //g' > !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.avgLen
+     awk -F : '{ if (\$1=="Average identity") printf "%s", substr(\$2, 1, length(\$2)-1)}' !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_INFO | sed 's/ //g' > !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.avgId
+     ## awk 'NR > 8 && $1 !~/\\// { sum+= $3 } END {print "SUM: "sum"\\nAVG: "sum/(NR-9)}' !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_INFO > !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_AVG
+     ## the first && is to skip first lines and the last one. The AVG is done -8 all the time execpt for the END print to "erase" the last "//" too.
+     '''
+}
+
+process HOMOPLASY {
+    container 'edgano/base:latest'
+    tag "HOMOPLASY on $id"
+    publishDir "${params.outdir}/homoplasy", mode: 'copy', overwrite: true
+
+    input:
+    val align_type
+    tuple  val (id), file (test_alignment)
+    val align_method
+    val tree_method
+    val bucket_size
+    file homoplasy
+
+    output:
+    tuple val(id), \
+    val(align_type), \
+    val(bucket_size), \
+    val(align_method), \
+    val(tree_method), \
+    path ("*.homo"), \
+    path("*.w_homo"), \
+    path("*.w_homo2"), \
+    path("*.len"), \
+    path("*.ngap"), \
+    path("*.ngap2"), emit: homoFiles
+
+    script:
+  """
+        ## remove whitespace
+    cat ${homoplasy} | tr -d ' ' > aux.txt
+        ## homo
+    awk -F : '{ if (\$1=="HOMOPLASY") printf "%s", \$2}' aux.txt  > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.homo
+        ## w_homo
+    awk -F : '{ if (\$1=="WEIGHTED_HOMOPLASY") printf "%s", \$2}' aux.txt  > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.w_homo
+        ## w_homo2
+    awk -F : '{ if (\$1=="WEIGHTED_HOMOPLASY2") printf "%s", \$2}' aux.txt > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.w_homo2
+        ## len
+    awk -F : '{ if (\$1=="LEN") printf "%s", \$2}' aux.txt > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.len
+        ## ngap
+    awk -F : '{ if (\$1=="NGAP") printf "%s", \$2}' aux.txt > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.ngap
+        ## ngap2
+    awk -F : '{ if (\$1=="NGAP2") printf "%s", \$2}' aux.txt > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.ngap2
+    """
+}
+
+process METRICS {
+    container 'edgano/base:latest'
+    tag "METRICS on $id"
+    publishDir "${params.outdir}/metrics", mode: 'copy', overwrite: true
+
+    input:
+    val align_type
+    tuple  val (id), file (test_alignment)
+    val align_method
+    val tree_method
+    val bucket_size
+    file metricsFile
+    file timeFile
+
+    output:
+    tuple val(id), \
+    val(align_type), \
+    val(bucket_size), \
+    val(align_method), \
+    val(tree_method), \
+    path("*.realtime"), \
+    path("*.rss"), \
+    path("*.peakRss"), \
+    path("*.vmem"), \
+    path("*.peakVmem"), \
+    path("*.timeReal"), \
+    path("*.timeUser"), \
+    path("*.timeSys"), emit: metricFiles
+
+    script:
+    """
+        ## remove whitespace
+    cat ${metricsFile} | tr -d ' ' > aux.txt
+        ## realtime > Task execution time i.e. delta between completion and start timestamp i.e. compute wall-time
+    awk -F = '{ if (\$1=="realtime") printf "%s", \$2}' aux.txt  > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.realtime
+        ## rss > Real memory (resident set) size of the process
+    awk -F = '{ if (\$1=="rss") printf "%s", \$2}' aux.txt > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.rss
+        ## peakRss > Peak of real memory
+    awk -F = '{ if (\$1=="peak_rss") printf "%s", \$2}' aux.txt  > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.peakRss
+        ## vmem > Virtual memory size of the process
+    awk -F = '{ if (\$1=="vmem") printf "%s", \$2}' aux.txt  > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.vmem
+        ## peakVmem > Peak of virtual memory
+    awk -F = '{ if (\$1=="peak_vmem") printf "%s", \$2}' aux.txt  > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.peakVmem
+
+    ## mv ${metricsFile} ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.metrics
+    awk '{ if (\$1=="real") printf "%s", \$2}' time.txt > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.timeReal
+    awk '{ if (\$1=="user") printf "%s", \$2}' time.txt > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.timeUser
+    awk '{ if (\$1=="sys") printf "%s", \$2}' time.txt > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.timeSys
     """
 }

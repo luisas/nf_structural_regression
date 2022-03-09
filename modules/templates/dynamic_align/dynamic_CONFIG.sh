@@ -20,9 +20,9 @@ export VERBOSE_4_DYNAMIC=1
           -reg_homoplasy \
           -dynamic_config ${dynamicConfig} \
           -cache ${params.blastOutdir} \
-        -psitrim 100 \
-        -psiJ 3 \
-        -prot_min_cov 90 \
-        -prot_max_sim 100 \
-        -prot_min_sim 0 \
+          -psitrim 100 \
+          -psiJ 3 \
+          -prot_min_cov 90 \
+          -prot_max_sim 100 \
+          -prot_min_sim 0 \
           -outfile ${id}.dynamic_${params.db}_${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${masterSize}_${slaveAln}.${slaveSize}.with.${tree_method}.tree.aln

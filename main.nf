@@ -56,7 +56,7 @@ params.trees ="${params.dataset_dir}/data/structural_regression/homfam/trees/{${
 //params.trees ="/users/cn/lsantus/data/structural_regression/homfam/trees/*.FAMSA.dnd"
 //params.trees = false
                       //CLUSTALO,FAMSA,MAFFT-FFTNS1
-params.align_methods = "CLUSTALO"//,FAMSA,MAFFT-FFTNS1"
+params.align_methods = "TCOFFEE"//,FAMSA,MAFFT-FFTNS1"
                       //MAFFT-DPPARTTREE0,FAMSA-SLINK,MBED,MAFFT-PARTTREE
 params.tree_methods = "MBED"      //TODO -> reuse trees for multiple methods.
 
@@ -76,8 +76,14 @@ params.dynamicConfig=true
 params.db = "uniref50"
 
 params.dynamic_align=true
-params.evaluate=true
+params.regressive_align=true
 
+
+params.evaluate=false
+params.homoplasy=false
+params.easel=false
+params.metrics=false
+params.compressAZ=false
 
 params.blastOutdir="$baseDir/blast"
 
@@ -124,6 +130,7 @@ log.info """\
 // import analysis pipelines
 include { TREE_GENERATION } from './modules/treeGeneration'   params(params)
 include { DYNAMIC_ANALYSIS } from './modules/reg_analysis'    params(params)
+include { REG_ANALYSIS } from './modules/reg_analysis'        params(params)
 
 // Channels containing sequences
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item] }
@@ -164,7 +171,9 @@ workflow pipeline {
         .map { it -> [ it[1][0], it[1][1], it[0][1], it[1][2] ] }
         .set { seqs_and_trees }
     }
-
+    if (params.regressive_align){
+      REG_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method, bucket_list)
+    }
     // Run MSA
     if (params.dynamic_align){
       DYNAMIC_ANALYSIS(seqs_and_trees, refs_ch, tree_method, bucket_list, dynamicX)
