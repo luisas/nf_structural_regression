@@ -56,9 +56,9 @@ params.trees ="${params.dataset_dir}/data/structural_regression/homfam/trees/{${
 //params.trees ="/users/cn/lsantus/data/structural_regression/homfam/trees/*.FAMSA.dnd"
 //params.trees = false
                       //CLUSTALO,FAMSA,MAFFT-FFTNS1
-params.align_methods = "FAMSA"//,FAMSA,MAFFT-FFTNS1"
+params.align_methods = "TCOFFEE"//,FAMSA,MAFFT-FFTNS1"
                       //MAFFT-DPPARTTREE0,FAMSA-SLINK,MBED,MAFFT-PARTTREE
-params.tree_methods = "BED"      //TODO -> reuse trees for multiple methods.
+params.tree_methods = "MBED"      //TODO -> reuse trees for multiple methods.
 
 params.buckets = "100"
 
@@ -75,11 +75,9 @@ params.dynamicConfig=true
             //uniref50, pdb or path
 params.db = "uniref50"
 
-params.predict = true
-
 params.dynamic_align=true
-params.regressive_align=false
-params.progressive_align=false
+params.regressive_align=true
+
 
 params.evaluate=false
 params.homoplasy=false
@@ -123,18 +121,16 @@ log.info """\
                           slave align  - boundary       : ${params.dynamicSlaveAln} - ${params.dynamicSlaveSize}
                   Dynamic DDBB                          : ${params.db}
                   DDBB path                             : ${params.database_path}
-                  Use AF2 predictions                   : ${params.predict}
          --##--
-         evaluate                                       : ${params.evaluate}
+         evaluatr                                       : ${params.evaluate}
          Output directory (DIRECTORY)                   : ${params.outdir}
          """
          .stripIndent()
 
 // import analysis pipelines
 include { TREE_GENERATION } from './modules/treeGeneration'   params(params)
-include { DYNAMIC_ANALYSIS } from './modules/dynamic_analysis'    params(params)
+include { DYNAMIC_ANALYSIS } from './modules/reg_analysis'    params(params)
 include { REG_ANALYSIS } from './modules/reg_analysis'        params(params)
-include { PROG_ANALYSIS } from './modules/prog_analysis'        params(params)
 
 // Channels containing sequences
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item] }
@@ -175,17 +171,10 @@ workflow pipeline {
         .map { it -> [ it[1][0], it[1][1], it[0][1], it[1][2] ] }
         .set { seqs_and_trees }
     }
-
-
-    // Run MSA
     if (params.regressive_align){
       REG_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method, bucket_list)
     }
-
-    if (params.progressive_align){
-      PROG_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method)
-    }
-
+    // Run MSA
     if (params.dynamic_align){
       DYNAMIC_ANALYSIS(seqs_and_trees, refs_ch, tree_method, bucket_list, dynamicX)
     }
@@ -199,5 +188,6 @@ workflow {
  * completion handler
  */
  workflow.onComplete {
+   println (['bash','-c', "$baseDir/bin/cpu_calculate.sh ${params.outdir}/individual_scores"].execute().text)
    println "Execution status: ${ workflow.success ? 'OK' : 'failed' } runName: ${workflow.runName}"
  }

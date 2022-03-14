@@ -272,3 +272,58 @@ process METRICS {
     awk '{ if (\$1=="sys") printf "%s", \$2}' time.txt > ${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.timeSys
     """
 }
+
+
+process GAPS_PROGRESSIVE {
+    container 'edgano/base:latest'
+    tag "GAPS_PROG on $id"
+    publishDir "${params.outdir}/gaps", mode: 'copy', overwrite: true
+
+    input:
+    val align_type
+    tuple  val (id), file (test_alignment)
+    val align_method
+    val tree_method
+    val bucket_size
+
+    output:
+    tuple val(id), \
+    val(align_type), \
+    val(bucket_size), \
+    val(align_method), \
+    val(tree_method), \
+    path("*.totGap"), \
+    path("*.numSeq"), \
+    path("*.alnLen"), emit: gapFiles
+
+    script:
+    """
+#!/usr/bin/env python
+from Bio import SeqIO
+from decimal import *
+import os
+gap = '-'
+globalGap = 0
+avgGap = 0
+auxGap = 0
+totGapName= "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.totGap"
+numbSeqName= "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.numSeq"
+alnLenName= "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.alnLen"
+totGapFile= open(totGapName,"w+")
+numSeqFile= open(numbSeqName,"w+")
+alnLenFile= open(alnLenName,"w+")
+record = list(SeqIO.parse("${test_alignment}", "fasta"))
+for sequence in record:
+    ## print(sequence.seq)
+    auxGap = sequence.seq.count(gap)
+    globalGap += auxGap
+avgGap = Decimal(globalGap) / Decimal(len(record))
+print "NumSeq: ",len(record)," GlobalGap: ",globalGap," AVG_Gap:",round(avgGap,3)
+totGapFile.write(str(globalGap))
+alnLenFile.write(str(len(record[0])))
+numSeqFile.write(str(len(record)))
+totGapFile.close()
+alnLenFile.close()
+numSeqFile.close()
+    """
+}

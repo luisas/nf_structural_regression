@@ -32,6 +32,25 @@ process REG_ALIGNER {
     template "${path_templates}/regressive_align/reg_${align_method}.sh"
 }
 
+process PROG_ALIGNER {
+    container 'edgano/tcoffee:pdb'
+    tag "$align_method - $tree_method on $id"
+    publishDir "${params.outdir}/alignments", pattern: '*.aln'
+
+    input:
+    tuple val(id), val(tree_method), path(seqs), path(guide_tree)
+    each align_method
+
+    output:
+    val align_method, emit: alignMethod
+    val tree_method, emit: treeMethod
+    tuple val (id), path ("${id}.prog.*.tree.aln"), emit: alignmentFile
+    path ".command.trace", emit: metricFile
+    path "time.txt", emit: timeFile
+    
+    script:
+    template "${path_templates}/progressive_align/prog_${align_method}.sh"
+}
 
 process DYNAMIC_ALIGNER {
     container 'edgano/tcoffee:pdb'
