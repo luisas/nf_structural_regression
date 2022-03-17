@@ -12,4 +12,4 @@ t_coffee -reg -reg_method dynamic_msa \
           -dynamic ${dynamicX} \
           -dynamic_config ${dynamicConfig}
 
-awk '/^>/{f=!d[\$1];d[\$1]=1}f' seqdump* > ${id}_${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${masterSize}_${slaveAln}.${slaveSize}.fasta
+mv seqdump.1 ${id}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.PARENTS.fasta

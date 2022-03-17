@@ -42,11 +42,19 @@ nextflow.enable.dsl = 2
 seq2improve="cryst,blmb,rrm,subt,ghf5,sdr,tRNA-synt_2b,zf-CCHH,egf,Acetyltransf,ghf13,p450,Rhodanese,aat,az,cytb,proteasome,GEL"
 top20fam="gluts,myb_DNA-binding,tRNA-synt_2b,biotin_lipoyl,hom,ghf13,aldosered,hla,Rhodanese,PDZ,blmb,rhv,p450,adh,aat,rrm,Acetyltransf,sdr,zf-CCHH,rvp"
 smallfam="seatoxin,hip"
-//params.dataset_dir="/users/cn/lsantus/"
-params.dataset_dir="/home/luisasantus/Desktop/crg_cluster"
+params.dataset_dir="/users/cn/lsantus/"
+//params.dataset_dir="/home/luisasantus/Desktop/crg_cluster"
 params.seqs ="${params.dataset_dir}/data/structural_regression/homfam/combinedSeqs/{${smallfam}}.fa"
+//params.seqs ="${params.dataset_dir}/data/structural_regression/homfam/combinedSeqs/${smallfam}.fa"
+
+//params.seqs ="${params.dataset_dir}/projects/structural_regression/data/{${smallfam}}.fasta"
+
 params.refs = "${params.dataset_dir}/data/structural_regression/homfam/refs/{${smallfam}}.ref"
 params.trees ="${params.dataset_dir}/data/structural_regression/homfam/trees/{${smallfam}}.FAMSA.dnd"
+
+
+//params.refs = "${params.dataset_dir}/data/structural_regression/homfam/refs/${smallfam}.ref"
+//params.trees ="${params.dataset_dir}/data/structural_regression/homfam/trees/${smallfam}.FAMSA.dnd"
 
 // input sequences to align in fasta format
 //params.seqs = "/users/cn/lsantus/data/structural_regression/homfam/combinedSeqs/*.fa"
@@ -55,33 +63,26 @@ params.trees ="${params.dataset_dir}/data/structural_regression/homfam/trees/{${
 
 //params.trees ="/users/cn/lsantus/data/structural_regression/homfam/trees/*.FAMSA.dnd"
 //params.trees = false
-                      //CLUSTALO,FAMSA,MAFFT-FFTNS1
-params.align_methods = "FAMSA"//,FAMSA,MAFFT-FFTNS1"
-                      //MAFFT-DPPARTTREE0,FAMSA-SLINK,MBED,MAFFT-PARTTREE
-params.tree_methods = "BED"      //TODO -> reuse trees for multiple methods.
+params.align_methods = "FAMSA"
+params.tree_methods = "FAMSA-medoid"
 
 params.buckets = "100"
-
-
 //  ## DYNAMIC parameters
 params.dynamicX = "100000"
-          //TODO -> make 2 list? one with aligners and the other with sizes? (to have more than 2 aligners)
 params.dynamicMasterAln="tcoffee_msa"
 params.dynamicMasterSize="100"
 params.dynamicSlaveAln="famsa_msa"
 params.dynamicSlaveSize="100000000"
 params.dynamicConfig=true
 
-            //uniref50, pdb or path
-params.db = "uniref50"
+params.predict = true // use alphafold for 3d coffee
 
-params.predict = true
 
 params.dynamic_align=true
 params.regressive_align=false
 params.progressive_align=false
 
-params.evaluate=false
+params.evaluate=true
 params.homoplasy=false
 params.easel=false
 params.metrics=false
@@ -89,22 +90,10 @@ params.compressAZ=false
 
 params.blastOutdir="$baseDir/blast"
 
-
 // output directory
 params.outdir = "$baseDir/results"
 
-// define database path
-uniref_path = "${params.dataset_dir}/data/structural_regression/db/uniref50.fasta"   // cluster path
-//uniref_path = "/users/cn/egarriga/datasets/db/uniref50.fasta"   // cluster path
-pdb_path = "/database/pdb/pdb_seqres.txt"                       // docker path
 
-if (params.db=='uniref50'){
-  params.database_path = uniref_path
-}else if(params.db=='pdb'){
-  params.database_path = pdb_path
-}else{
-  params.database_path = params.db
-}
 
 log.info """\
          PIPELINE  ~  version 0.1"
@@ -121,8 +110,6 @@ log.info """\
                   Dynamic config file                   : ${params.dynamicConfig}
                           master align - boundary       : ${params.dynamicMasterAln} - ${params.dynamicMasterSize}
                           slave align  - boundary       : ${params.dynamicSlaveAln} - ${params.dynamicSlaveSize}
-                  Dynamic DDBB                          : ${params.db}
-                  DDBB path                             : ${params.database_path}
                   Use AF2 predictions                   : ${params.predict}
          --##--
          evaluate                                       : ${params.evaluate}
@@ -151,11 +138,11 @@ if ( params.trees ) {
   Channel.empty().set { trees }
 }
 
-// tokenize params
+// Tokenize params
 tree_method = params.tree_methods.tokenize(',')
 align_method = params.align_methods.tokenize(',')
-bucket_list = params.buckets.toString().tokenize(',') //int to string
-dynamicX = params.dynamicX.toString().tokenize(',') //int to string
+bucket_list = params.buckets.toString().tokenize(',')
+dynamicX = params.dynamicX.toString().tokenize(',')
 
 /*
  * main script flow

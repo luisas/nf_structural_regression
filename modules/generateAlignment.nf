@@ -47,16 +47,16 @@ process PROG_ALIGNER {
     tuple val (id), path ("${id}.prog.*.tree.aln"), emit: alignmentFile
     path ".command.trace", emit: metricFile
     path "time.txt", emit: timeFile
-    
+
     script:
     template "${path_templates}/progressive_align/prog_${align_method}.sh"
 }
 
 process DYNAMIC_ALIGNER {
-    container 'edgano/tcoffee:pdb'
+    container 'luisas/structural_regression'
     //tag "$align_method - $tree_method on $id"
     tag "$align_method - $tree_method on $id; ${masterAln}-${masterSize}:${slaveAln}-${slaveSize}"
-    publishDir "${params.outdir}/alignments", pattern: '*.aln'
+    storeDir "${params.outdir}/alignments/$id"
     label 'process_medium'
 
     input:
@@ -67,16 +67,15 @@ process DYNAMIC_ALIGNER {
     path (dynamicConfig)
     tuple val(masterAln), val(masterSize), val(slaveAln), val(slaveSize)
     val dynamicValues
+    tuple val (fam_name), path (structures)
 
     output:
-    val "${dynamicValues}_${params.db}", emit: alignMethod
-    val tree_method, emit: treeMethod
-    val "${bucket_size}_${dynamicX}", emit: bucketSize
-    tuple val (id), path("*.with.${tree_method}.tree.aln"), emit: alignmentFile
-    path "${id}.homoplasy", emit: homoplasyFile
-    path ".command.trace", emit: metricFile
+    tuple val (id), path("${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.${slaveAln}.${slaveSize}.${tree_method}.aln"), emit: alignmentFile
+    //path "${id}.homoplasy", emit: homoplasyFile
+    //path ".command.trace", emit: metricFile
 
     script:
-    // template can be default or using a config file
-    template "${path_templates}/dynamic_align/dynamic_${align_method}.sh"
+    // Only use the MSA for the parent sequences since the one in the bottom is always the same
+    template "${path_templates}/dynamic_align/dynamic_${align_method}_${masterAln}.sh"
+    //template "${path_templates}/dynamic_align/dynamic_test.sh"
 }

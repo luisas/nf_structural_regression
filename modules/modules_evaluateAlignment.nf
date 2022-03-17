@@ -1,146 +1,48 @@
 #!/bin/bash nextflow
 params.outdir = 'results'
 
-
-
-process EVAL_COMPRESS {
-    container 'edgano/tcoffee:pdb'
-    tag "EVAL_COMPRESS on $id"
-    publishDir "${params.outdir}/score/tc", mode: 'copy', overwrite: true, pattern: '*.tc'
-    publishDir "${params.outdir}/score/sp", mode: 'copy', overwrite: true, pattern: '*.sp'
-    publishDir "${params.outdir}/score/col", mode: 'copy', overwrite: true, pattern: '*.col'
-
-    input:
-    val align_type
-    tuple  val (id), file (test_alignment), file (ref_alignment)
-    val align_method
-    val tree_method
-    val bucket_size
-
-    output:
-    tuple val(id), \
-    val(align_type), \
-    val(bucket_size), \
-    val(align_method), \
-    val(tree_method), \
-    path ("${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.sp"), emit: spScore
-
-    tuple val(id), \
-    val(align_type), \
-    val(bucket_size), \
-    val(align_method), \
-    val(tree_method), \
-    path ("${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.tc"), emit: tcScore
-
-    tuple val(id), \
-    val(align_type), \
-    val(bucket_size), \
-    val(align_method), \
-    val(tree_method), \
-    path ("${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.col"), emit: colScore
-
-    script:
-    """
-    ## extract ids
-    grep \"^>\"  ${ref_alignment} | sed 's/^>//g' > id_extracted.txt
-    ## extract embedded ref from aln
-    awk 'NR==FNR{n[">"\$0];next} f{print f ORS \$0;f=""} \$0 in n{f=\$0}' id_extracted.txt ${test_alignment} > ref_extracted.aln
-    ##  decompress ref_aln, from gap format to fasta
-    ## TODO -> place it in the container.
-    gcc ${baseDir}/bin/bioinfoCommands/gap.c -o gap
-    chmod 777 gap
-    ./gap ref_extracted.aln false                ## resultG2F.fa
-    ##  compare ref and ref_aln
-        ## Sum-of-Pairs Score ##
-        t_coffee -other_pg aln_compare \
-                -al1 ${ref_alignment} \
-                -al2 resultG2F.fa \
-                -compare_mode sp \
-                | grep -v "seq1" | grep -v '*' | \
-                awk '{ print \$4}' ORS="\t" \
-                > "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.sp"
-        ## Total Column Score ##
-        t_coffee -other_pg aln_compare \
-                -al1 ${ref_alignment} \
-                -al2 resultG2F.fa \
-                -compare_mode tc \
-                | grep -v "seq1" | grep -v '*' | \
-                awk '{ print \$4}' ORS="\t" \
-                > "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.tc"
-        ## Column Score ##
-        t_coffee -other_pg aln_compare \
-                -al1 ${ref_alignment} \
-                -al2 resultG2F.fa \
-                -compare_mode column \
-                | grep -v "seq1" | grep -v '*' | \
-                awk '{ print \$4}' ORS="\t" \
-                > "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.col"
-    """
-}
-
-
 process EVAL_ALIGNMENT {
     container 'edgano/tcoffee:pdb'
     tag "EVAL_ALIGNMENT on $id"
-    publishDir "${params.outdir}/score/tc", mode: 'copy', overwrite: true, pattern: '*.tc'
-    publishDir "${params.outdir}/score/sp", mode: 'copy', overwrite: true, pattern: '*.sp'
-    publishDir "${params.outdir}/score/col", mode: 'copy', overwrite: true, pattern: '*.col'
+    storeDir "${params.outdir}/evaluation/score/"
 
     input:
-    val align_type
     tuple  val (id), file (test_alignment), file (ref_alignment)
-    val align_method
-    val tree_method
-    val bucket_size
 
     output:
-    tuple val(id), \
-    val(align_type), \
-    val(bucket_size), \
-    val(align_method), \
-    val(tree_method), \
-    path ("${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.sp"), emit: spScore
+    path ("${test_alignment.baseName}.scores"), emit: scores
 
-    tuple val(id), \
-    val(align_type), \
-    val(bucket_size), \
-    val(align_method), \
-    val(tree_method), \
-    path ("${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.tc"), emit: tcScore
-
-    tuple val(id), \
-    val(align_type), \
-    val(bucket_size), \
-    val(align_method), \
-    val(tree_method), \
-    path ("${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.col"), emit: colScore
 
     script:
     """
     ## Sum-of-Pairs Score ##
-       t_coffee -other_pg aln_compare \
+    t_coffee -other_pg aln_compare \
              -al1 ${ref_alignment} \
              -al2 ${test_alignment} \
             -compare_mode sp \
             | grep -v "seq1" | grep -v '*' | \
             awk '{ print \$4}' ORS="\t" \
-            > "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.sp"
+            >> "scores.txt"
+
     ## Total Column Score ##
-       t_coffee -other_pg aln_compare \
+    t_coffee -other_pg aln_compare \
              -al1 ${ref_alignment} \
              -al2 ${test_alignment} \
             -compare_mode tc \
             | grep -v "seq1" | grep -v '*' | \
             awk '{ print \$4}' ORS="\t" \
-            > "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.tc"
+            >> "scores.txt"
+
     ## Column Score ##
-       t_coffee -other_pg aln_compare \
-             -al1 ${ref_alignment} \
-             -al2 ${test_alignment} \
-            -compare_mode column \
-            | grep -v "seq1" | grep -v '*' | \
-              awk '{ print \$4}' ORS="\t" \
-            > "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.col"
+        t_coffee -other_pg aln_compare \
+              -al1 ${ref_alignment} \
+              -al2 ${test_alignment} \
+             -compare_mode column \
+             | grep -v "seq1" | grep -v '*' | \
+             awk '{ print \$4}' ORS="\t" \
+             >> "scores.txt"
+
+    cat scores.txt | tr -s '[:blank:]' ';'  >  ${test_alignment.baseName}.scores
     """
 }
 
@@ -148,7 +50,7 @@ process EVAL_ALIGNMENT {
 process EASEL_INFO {
     container 'edgano/hmmer:latest'
     tag "EASEL_INFO on $id"
-    publishDir "${params.outdir}/easel", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}/evaluation/easel", mode: 'copy', overwrite: true
 
     input:
     val align_type
@@ -172,15 +74,13 @@ process EASEL_INFO {
      esl-alistat !{test_alignment} > !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_INFO
      awk -F : '{ if (\$1=="Average length") printf "%s", \$2}' !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_INFO | sed 's/ //g' > !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.avgLen
      awk -F : '{ if (\$1=="Average identity") printf "%s", substr(\$2, 1, length(\$2)-1)}' !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_INFO | sed 's/ //g' > !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.avgId
-     ## awk 'NR > 8 && $1 !~/\\// { sum+= $3 } END {print "SUM: "sum"\\nAVG: "sum/(NR-9)}' !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_INFO > !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_AVG
-     ## the first && is to skip first lines and the last one. The AVG is done -8 all the time execpt for the END print to "erase" the last "//" too.
      '''
 }
 
 process HOMOPLASY {
     container 'edgano/base:latest'
     tag "HOMOPLASY on $id"
-    publishDir "${params.outdir}/homoplasy", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}/evaluation/homoplasy", mode: 'copy', overwrite: true
 
     input:
     val align_type
@@ -225,7 +125,7 @@ process HOMOPLASY {
 process METRICS {
     container 'edgano/base:latest'
     tag "METRICS on $id"
-    publishDir "${params.outdir}/metrics", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}/evaluation/metrics", mode: 'copy', overwrite: true
 
     input:
     val align_type
@@ -277,7 +177,7 @@ process METRICS {
 process GAPS_PROGRESSIVE {
     container 'edgano/base:latest'
     tag "GAPS_PROG on $id"
-    publishDir "${params.outdir}/gaps", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}/evaluation/gaps", mode: 'copy', overwrite: true
 
     input:
     val align_type

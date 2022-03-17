@@ -4,14 +4,14 @@ nextflow.enable.dsl=2
 process RUN_COLABFOLD {
 	tag "${fam_name}"
 	//publishDir "${params.outdir}/${fam_name}_colabfold", mode: 'copy'
-	storeDir "${params.outdir}/${fam_name}_colabfold"
+	storeDir "${params.outdir}/structures/colabfold_predictions/${fam_name}_colabfold"
 
 	input:
 	tuple val(fam_name), path(fasta)
 
 	output:
 	path ("*"), emit: all_af2
-	path ("*_alphafold.pdb"), emit: af2_pdb
+	tuple val(fam_name),path ("*_alphafold.pdb"), emit: af2_pdb
 
 	script:
 	if (params.cpu_flag == true) {cpu_flag = '--cpu'}
