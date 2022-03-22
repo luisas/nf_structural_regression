@@ -4,7 +4,6 @@ params.outdir = 'results'
 include {EVAL_ALIGNMENT}      from './modules_evaluateAlignment.nf'
 include {EASEL_INFO}          from './modules_evaluateAlignment.nf'
 include {GAPS_PROGRESSIVE}    from './modules_evaluateAlignment.nf'
-include {METRICS}             from './modules_evaluateAlignment.nf'
 include {PROG_ALIGNER}       from './generateAlignment.nf'
 workflow PROG_ANALYSIS {
   take:

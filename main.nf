@@ -41,30 +41,21 @@ nextflow.enable.dsl = 2
 //  Subsets of families - for testing
 seq2improve="cryst,blmb,rrm,subt,ghf5,sdr,tRNA-synt_2b,zf-CCHH,egf,Acetyltransf,ghf13,p450,Rhodanese,aat,az,cytb,proteasome,GEL"
 top20fam="gluts,myb_DNA-binding,tRNA-synt_2b,biotin_lipoyl,hom,ghf13,aldosered,hla,Rhodanese,PDZ,blmb,rhv,p450,adh,aat,rrm,Acetyltransf,sdr,zf-CCHH,rvp"
-smallfam="seatoxin,hip"
+smallfam="seatoxin"
 params.dataset_dir="/users/cn/lsantus/"
 //params.dataset_dir="/home/luisasantus/Desktop/crg_cluster"
-params.seqs ="${params.dataset_dir}/data/structural_regression/homfam/combinedSeqs/{${smallfam}}.fa"
-//params.seqs ="${params.dataset_dir}/data/structural_regression/homfam/combinedSeqs/${smallfam}.fa"
+//params.dataset = "homfam"
+params.dataset = "homfam"
+params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/${smallfam}.fa"
+params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/${smallfam}.ref"
 
-//params.seqs ="${params.dataset_dir}/projects/structural_regression/data/{${smallfam}}.fasta"
+//params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/*.fa"
+//params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/*.ref"
+//params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/*.dnd"
 
-params.refs = "${params.dataset_dir}/data/structural_regression/homfam/refs/{${smallfam}}.ref"
-params.trees ="${params.dataset_dir}/data/structural_regression/homfam/trees/{${smallfam}}.FAMSA.dnd"
 
-
-//params.refs = "${params.dataset_dir}/data/structural_regression/homfam/refs/${smallfam}.ref"
-//params.trees ="${params.dataset_dir}/data/structural_regression/homfam/trees/${smallfam}.FAMSA.dnd"
-
-// input sequences to align in fasta format
-//params.seqs = "/users/cn/lsantus/data/structural_regression/homfam/combinedSeqs/*.fa"
-
-//params.refs = "/users/cn/lsantus/data/structural_regression/homfam/refs/*.ref"
-
-//params.trees ="/users/cn/lsantus/data/structural_regression/homfam/trees/*.FAMSA.dnd"
-//params.trees = false
 params.align_methods = "FAMSA"
-params.tree_methods = "FAMSA-medoid"
+params.tree_methods = "FAMSA-medoid" 
 
 params.buckets = "100"
 //  ## DYNAMIC parameters
@@ -75,24 +66,26 @@ params.dynamicSlaveAln="famsa_msa"
 params.dynamicSlaveSize="100000000"
 params.dynamicConfig=true
 
-params.predict = true // use alphafold for 3d coffee
+if(params.dynamicMasterAln=="tcoffee_msa"){
+  params.predict = true
+}else{
+  params.predict = true
+}
 
 
 params.dynamic_align=true
 params.regressive_align=false
 params.progressive_align=false
 
-params.evaluate=true
+params.evaluate=false
 params.homoplasy=false
 params.easel=false
 params.metrics=false
 params.compressAZ=false
 
-params.blastOutdir="$baseDir/blast"
-
 // output directory
-params.outdir = "$baseDir/results"
-
+params.outdir = "$baseDir/results/${params.dataset}"
+params.structures_dir="$baseDir/results/structures"
 
 
 log.info """\
@@ -105,6 +98,10 @@ log.info """\
          Tree methods                                   : ${params.tree_methods}
          Bucket size                                    : ${params.buckets}
          --##--
+         Generate Progressive alignments                : ${params.progressive_align}
+         --##--
+         Generate Regressive alignments                 : ${params.regressive_align}
+         --##--
          Generate Dynamic alignments                    : ${params.dynamic_align}
                   Dynamic size                          : ${params.dynamicX}
                   Dynamic config file                   : ${params.dynamicConfig}
@@ -112,7 +109,7 @@ log.info """\
                           slave align  - boundary       : ${params.dynamicSlaveAln} - ${params.dynamicSlaveSize}
                   Use AF2 predictions                   : ${params.predict}
          --##--
-         evaluate                                       : ${params.evaluate}
+         Evaluate                                       : ${params.evaluate}
          Output directory (DIRECTORY)                   : ${params.outdir}
          """
          .stripIndent()
@@ -144,25 +141,19 @@ align_method = params.align_methods.tokenize(',')
 bucket_list = params.buckets.toString().tokenize(',')
 dynamicX = params.dynamicX.toString().tokenize(',')
 
+params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/${tree_method}/${smallfam}*.dnd"
+
+
 /*
  * main script flow
  */
 workflow pipeline {
 
-    // If trees not provided, create them
-    if (!params.trees){
-      TREE_GENERATION (seqs_ch, tree_method)
-      seqs_ch
-        .cross(TREE_GENERATION.out)
+    TREE_GENERATION (seqs_ch, tree_method)
+    seqs_ch
+        .cross(TREE_GENERATION.out.trees)
         .map { it -> [ it[1][0], it[1][1], it[0][1], it[1][2] ] }
         .set { seqs_and_trees }
-    }else{
-      seqs_ch
-        .cross(trees)
-        .map { it -> [ it[1][0], it[1][1], it[0][1], it[1][2] ] }
-        .set { seqs_and_trees }
-    }
-
 
     // Run MSA
     if (params.regressive_align){

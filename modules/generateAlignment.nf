@@ -24,9 +24,6 @@ process REG_ALIGNER {
     tuple val (id), path ("${id}.*.aln"), emit: alignmentFile
     path "${id}.homoplasy", emit: homoplasyFile
     path ".command.trace", emit: metricFile
-    path "time.txt", emit: timeFile
-    //path "*.template_list", emit: templateFile
-    //path "*.prf", emit: templateProfile
 
     script:
     template "${path_templates}/regressive_align/reg_${align_method}.sh"
@@ -42,11 +39,8 @@ process PROG_ALIGNER {
     each align_method
 
     output:
-    val align_method, emit: alignMethod
-    val tree_method, emit: treeMethod
     tuple val (id), path ("${id}.prog.*.tree.aln"), emit: alignmentFile
     path ".command.trace", emit: metricFile
-    path "time.txt", emit: timeFile
 
     script:
     template "${path_templates}/progressive_align/prog_${align_method}.sh"
@@ -54,9 +48,8 @@ process PROG_ALIGNER {
 
 process DYNAMIC_ALIGNER {
     container 'luisas/structural_regression'
-    //tag "$align_method - $tree_method on $id"
     tag "$align_method - $tree_method on $id; ${masterAln}-${masterSize}:${slaveAln}-${slaveSize}"
-    storeDir "${params.outdir}/alignments/$id"
+    storeDir "${params.outdir}/alignments/$id/${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.${slaveAln}.${slaveSize}.${tree_method}"
     label 'process_medium'
 
     input:
@@ -71,11 +64,10 @@ process DYNAMIC_ALIGNER {
 
     output:
     tuple val (id), path("${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.${slaveAln}.${slaveSize}.${tree_method}.aln"), emit: alignmentFile
-    //path "${id}.homoplasy", emit: homoplasyFile
-    //path ".command.trace", emit: metricFile
+    path "*.homoplasy", emit: homoplasyFile
+    path ".command.trace", emit: metricFile
 
     script:
-    // Only use the MSA for the parent sequences since the one in the bottom is always the same
     template "${path_templates}/dynamic_align/dynamic_${align_method}_${masterAln}.sh"
-    //template "${path_templates}/dynamic_align/dynamic_test.sh"
+
 }

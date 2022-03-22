@@ -3,8 +3,7 @@ nextflow.enable.dsl=2
 
 process RUN_COLABFOLD {
 	tag "${fam_name}"
-	//publishDir "${params.outdir}/${fam_name}_colabfold", mode: 'copy'
-	storeDir "${params.outdir}/structures/colabfold_predictions/${fam_name}_colabfold"
+	storeDir "${params.structures_dir}"
 
 	input:
 	tuple val(fam_name), path(fasta)
@@ -12,12 +11,11 @@ process RUN_COLABFOLD {
 	output:
 	path ("*"), emit: all_af2
 	tuple val(fam_name),path ("*_alphafold.pdb"), emit: af2_pdb
+	//path ".command.trace", emit: metricFile
 
 	script:
-	if (params.cpu_flag == true) {cpu_flag = '--cpu'}
-	else {cpu_flag = ' '}
 	"""
-	colabfold_batch --amber --templates --num-recycle 3 ${fasta} \$PWD ${cpu_flag}
+	colabfold_batch --amber --templates --num-recycle 3 ${fasta} \$PWD
 	for i in `find *_relaxed_rank_1*.pdb`; do cp \$i `echo \$i | sed "s|_relaxed_rank_|\t|g" | cut -f1`"_alphafold.pdb"; done
 	"""
 }

@@ -5,8 +5,6 @@ include {REG_ALIGNER}       from './generateAlignment.nf'
 include {DYNAMIC_ALIGNER}             from './generateAlignment.nf'
 include {EVAL_ALIGNMENT}    from './modules_evaluateAlignment.nf'
 include {EASEL_INFO}        from './modules_evaluateAlignment.nf'
-include {HOMOPLASY}         from './modules_evaluateAlignment.nf'
-include {METRICS}           from './modules_evaluateAlignment.nf'
 include { RUN_COLABFOLD } from './localcolabfold.nf'
 
 
@@ -55,7 +53,6 @@ workflow DYNAMIC_ANALYSIS {
       structures = ""
     }
 
-    // Then Align!
     DYNAMIC_ALIGNER (seqs_and_trees, align_method, bucket_size, dynamicX, configFile, configValues, dynamicValues, structures)
 
 
@@ -70,11 +67,11 @@ workflow DYNAMIC_ANALYSIS {
         .set { alignment_and_ref }
 
       EVAL_ALIGNMENT (alignment_and_ref)
-      // Collect results in one CSV
       EVAL_ALIGNMENT.out.scores.map{ it -> "${it.baseName};${it.text}" }
                     .collectFile(name: "dynamic.scores.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
-
     }
+
+
 
   emit:
   alignment = DYNAMIC_ALIGNER.out.alignmentFile

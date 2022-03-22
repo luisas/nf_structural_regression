@@ -29,8 +29,7 @@ process GENERATE_DYNAMIC_CONFIG {
 process EXTRACT_SEQUENCES {
   container 'edgano/tcoffee:pdb'
   tag "$align_method - $tree_method on $id; ${masterAln}-${masterSize}:${slaveAln}-${slaveSize}"
-  //publishDir "${params.outdir}/seqs_extracted", pattern: '*'
-  storeDir "${params.outdir}/seqs_extracted"
+  storeDir "${params.outdir}/seqs_extracted/${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.${slaveAln}.${slaveSize}.${tree_method}"
 
   input:
   tuple val(id), val(tree_method), path(seqs), path(guide_tree)
@@ -43,6 +42,7 @@ process EXTRACT_SEQUENCES {
 
   output:
   tuple val (id), path("*.fasta"), emit: extractedSequences
+  path ".command.trace", emit: metricFile
 
   script:
   template "${path_templates}/dynamic_align/dynamic_EXTRACT.sh"

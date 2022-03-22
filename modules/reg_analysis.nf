@@ -5,8 +5,7 @@ include {REG_ALIGNER}       from './generateAlignment.nf'
 include {DYNAMIC_ALIGNER}             from './generateAlignment.nf'
 include {EVAL_ALIGNMENT}    from './modules_evaluateAlignment.nf'
 include {EASEL_INFO}        from './modules_evaluateAlignment.nf'
-include {HOMOPLASY}         from './modules_evaluateAlignment.nf'
-include {METRICS}           from './modules_evaluateAlignment.nf'
+
 workflow REG_ANALYSIS {
   take:
     seqs_and_trees

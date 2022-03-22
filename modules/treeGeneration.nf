@@ -7,8 +7,8 @@ path_templates = set_templates_path()
 process TREE_GENERATION {
     container 'luisas/structural_regression'
     tag "$tree_method on $id"
-    storeDir "${params.outdir}/trees"
-    label "process_big"
+    storeDir "${params.outdir}/trees/${id}/${id}.${tree_method}"
+    label "process_small"
 
     input:
     tuple val(id), path(seqs)
@@ -16,6 +16,8 @@ process TREE_GENERATION {
 
     output:
     tuple val (id), val(tree_method), path ("${id}.${tree_method}.dnd"), emit: trees
+    path ".command.trace", emit: metricFile
+
 
     script:
     template "${path_templates}/tree/tree_${tree_method}.sh"
