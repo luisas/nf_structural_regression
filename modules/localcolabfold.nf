@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 process RUN_COLABFOLD {
 	tag "${fam_name}"
-	storeDir "${params.structures_dir}"
+	storeDir "${params.structures_dir}/colabfold/${fam_name}"
 
 	input:
 	tuple val(fam_name), path(fasta)
@@ -11,7 +11,7 @@ process RUN_COLABFOLD {
 	output:
 	path ("*"), emit: all_af2
 	tuple val(fam_name),path ("*_alphafold.pdb"), emit: af2_pdb
-	//path ".command.trace", emit: metricFile
+	path ".command.trace", emit: metricFile
 
 	script:
 	"""

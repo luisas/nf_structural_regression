@@ -41,7 +41,7 @@ nextflow.enable.dsl = 2
 //  Subsets of families - for testing
 seq2improve="cryst,blmb,rrm,subt,ghf5,sdr,tRNA-synt_2b,zf-CCHH,egf,Acetyltransf,ghf13,p450,Rhodanese,aat,az,cytb,proteasome,GEL"
 top20fam="gluts,myb_DNA-binding,tRNA-synt_2b,biotin_lipoyl,hom,ghf13,aldosered,hla,Rhodanese,PDZ,blmb,rhv,p450,adh,aat,rrm,Acetyltransf,sdr,zf-CCHH,rvp"
-smallfam="seatoxin"
+smallfam="hip"
 params.dataset_dir="/users/cn/lsantus/"
 //params.dataset_dir="/home/luisasantus/Desktop/crg_cluster"
 //params.dataset = "homfam"
@@ -55,7 +55,7 @@ params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset
 
 
 params.align_methods = "FAMSA"
-params.tree_methods = "FAMSA-medoid" 
+params.tree_methods = "FAMSA-medoid"
 
 params.buckets = "100"
 //  ## DYNAMIC parameters
@@ -85,7 +85,7 @@ params.compressAZ=false
 
 // output directory
 params.outdir = "$baseDir/results/${params.dataset}"
-params.structures_dir="$baseDir/results/structures"
+params.structures_dir="$baseDir/results/structures/"
 
 
 log.info """\

@@ -53,16 +53,20 @@ process EXTRACT_SEQUENCES {
 process ADD_PDB_HEADERS{
   container 'edgano/tcoffee:pdb'
   tag "${fam_name}"
-  storeDir "${params.outdir}/structures/colabfold_predictions_header/${fam_name}_colabfold"
+  storeDir "${params.outdir}/structures/colabfold_header/${fam_name}/"
 
   input:
   tuple val (fam_name), path (af2_pdb)
 
   output:
   tuple val(fam_name), path("*_header.pdb"), emit: pdb
+  path("${fam_name}_plddt.eval"), emit: plddt
 
   script:
   """
   for i in `find *.pdb`; do /tcoffee/t_coffee/src/extract_from_pdb -force -infile \$i > test.pdb; f="\$(basename -- \$i .pdb)"; mv test.pdb \${f}_header.pdb; done
+  # Store the
+  for i in `find *_header.pdb`;do plddt=`awk '{print \$6"\t"\$11}' \$i | uniq | cut -f2 | awk '{ total += \$1 } END { print \$i total/(NR-1) }'`; echo \$i \$plddt >> plddt.eval; done
+  sed 's/_alphafold_header.pdb//g' plddt.eval > ${fam_name}_plddt.eval
   """
 }
