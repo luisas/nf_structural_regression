@@ -24,6 +24,7 @@
  *
  * @authors
  * Luisa Santus
+ * Athanasios Baltzis
  * Edgar Garriga
  * Jose Espinosa-Carrasco
  */
