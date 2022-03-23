@@ -8,9 +8,7 @@ path_templates = set_templates_path()
 process REG_ALIGNER {
     container 'edgano/tcoffee:pdb'
     tag "$align_method - $tree_method - $bucket_size on $id"
-    publishDir "${params.outdir}/alignments", pattern: '*.aln'
-    //publishDir "${params.outdir}/templates", pattern: '*.template_list'
-    //publishDir "${params.outdir}/templates", pattern: '*.prf'
+    storeDir "${params.outdir}/alignments/$id/${id}.regressive.${bucket_size}.${align_method}.${tree_method}"
 
     input:
     tuple val(id), val(tree_method), file(seqs), file(guide_tree)
@@ -29,22 +27,6 @@ process REG_ALIGNER {
     template "${path_templates}/regressive_align/reg_${align_method}.sh"
 }
 
-process PROG_ALIGNER {
-    container 'edgano/tcoffee:pdb'
-    tag "$align_method - $tree_method on $id"
-    publishDir "${params.outdir}/alignments", pattern: '*.aln'
-
-    input:
-    tuple val(id), val(tree_method), path(seqs), path(guide_tree)
-    each align_method
-
-    output:
-    tuple val (id), path ("${id}.prog.*.tree.aln"), emit: alignmentFile
-    path ".command.trace", emit: metricFile
-
-    script:
-    template "${path_templates}/progressive_align/prog_${align_method}.sh"
-}
 
 process DYNAMIC_ALIGNER {
     container 'luisas/structural_regression'
@@ -70,4 +52,23 @@ process DYNAMIC_ALIGNER {
     script:
     template "${path_templates}/dynamic_align/dynamic_${align_method}_${masterAln}.sh"
 
+}
+
+
+
+process PROG_ALIGNER {
+    container 'edgano/tcoffee:pdb'
+    tag "$align_method - $tree_method on $id"
+    publishDir "${params.outdir}/alignments", pattern: '*.aln'
+
+    input:
+    tuple val(id), val(tree_method), path(seqs), path(guide_tree)
+    each align_method
+
+    output:
+    tuple val (id), path ("${id}.prog.*.tree.aln"), emit: alignmentFile
+    path ".command.trace", emit: metricFile
+
+    script:
+    template "${path_templates}/progressive_align/prog_${align_method}.sh"
 }

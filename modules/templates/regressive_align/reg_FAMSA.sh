@@ -6,10 +6,10 @@ if $params.compressAZ ; then
     compressFlag=" -output fastaz_aln"
 fi
 
-{ time -p t_coffee -reg -reg_method famsa_msa \
+t_coffee -reg -reg_method famsa_msa \
          -reg_tree ${guide_tree} \
          -seq ${seqs} \
          -reg_nseq ${bucket_size} \
          -reg_homoplasy \
          \$compressFlag \
-         -outfile ${id}.reg_${bucket_size}.${align_method}.with.${tree_method}.tree.aln 2> tcoffee.stderr ; } 2> time.txt
+         -outfile ${id}.regressive.${bucket_size}.${align_method}.${tree_method}.aln 2> tcoffee.stderr

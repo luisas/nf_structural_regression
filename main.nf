@@ -41,13 +41,14 @@ nextflow.enable.dsl = 2
 //  Subsets of families - for testing
 seq2improve="cryst,blmb,rrm,subt,ghf5,sdr,tRNA-synt_2b,zf-CCHH,egf,Acetyltransf,ghf13,p450,Rhodanese,aat,az,cytb,proteasome,GEL"
 top20fam="gluts,myb_DNA-binding,tRNA-synt_2b,biotin_lipoyl,hom,ghf13,aldosered,hla,Rhodanese,PDZ,blmb,rhv,p450,adh,aat,rrm,Acetyltransf,sdr,zf-CCHH,rvp"
-smallfam="hip"
+testfam="seatoxin,scorptoxin,cyt3,rnasemam,bowman"
+smallfam="seatoxin"
 params.dataset_dir="/users/cn/lsantus/"
 //params.dataset_dir="/home/luisasantus/Desktop/crg_cluster"
 //params.dataset = "homfam"
 params.dataset = "homfam"
-params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/${smallfam}.fa"
-params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/${smallfam}.ref"
+params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/{${testfam}}.fa"
+params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/{${testfam}}.ref"
 
 //params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/*.fa"
 //params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/*.ref"
@@ -74,10 +75,10 @@ if(params.dynamicMasterAln=="tcoffee_msa"){
 
 
 params.dynamic_align=true
-params.regressive_align=false
+params.regressive_align=true
 params.progressive_align=false
 
-params.evaluate=false
+params.evaluate=true
 params.homoplasy=false
 params.easel=false
 params.metrics=false
@@ -141,7 +142,7 @@ align_method = params.align_methods.tokenize(',')
 bucket_list = params.buckets.toString().tokenize(',')
 dynamicX = params.dynamicX.toString().tokenize(',')
 
-params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/${tree_method}/${smallfam}*.dnd"
+params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/${tree_method}/{${testfam}}*.dnd"
 
 
 /*

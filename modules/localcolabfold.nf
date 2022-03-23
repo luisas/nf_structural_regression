@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 process RUN_COLABFOLD {
 	tag "${fam_name}"
-	storeDir "${params.structures_dir}/colabfold/${fam_name}"
+	storeDir "${params.outdir}/structures/colabfold/${fam_name}"
 
 	input:
 	tuple val(fam_name), path(fasta)
