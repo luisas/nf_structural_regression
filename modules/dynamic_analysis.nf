@@ -47,13 +47,22 @@ workflow DYNAMIC_ANALYSIS {
       RUN_COLABFOLD(EXTRACT_SEQUENCES.out.extractedSequences)
       // Prep PBD files for tcoffee
       ADD_PDB_HEADERS(RUN_COLABFOLD.out.af2_pdb)
-      structures = ADD_PDB_HEADERS.out.pdb
+
+      ADD_PDB_HEADERS.out.pdb
+        .combine(EXTRACT_SEQUENCES.out.extractedSequences, by: [0,1,2])
+        .set{ structures_ch }
 
     }else{
       structures = ""
     }
 
-    DYNAMIC_ALIGNER (seqs_and_trees, align_method, bucket_size, dynamicX, configFile, configValues, dynamicValues, structures)
+
+
+
+
+
+
+    DYNAMIC_ALIGNER (seqs_and_trees, align_method, bucket_size, dynamicX, configFile, configValues, dynamicValues, structures_ch)
 
 
 

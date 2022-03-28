@@ -9,7 +9,18 @@ export DUMP_ALN_BUCKETS=1
 
 # -------- Create template file
 # -------- Only extract parent sequences for the template!
-for i in `awk 'sub(/^>/, "")' ${seqs}`; do id_pdb=`echo \$i |  sed 's./._.g'`;  echo -e ">"\$i "_P_" "\${id_pdb}"_alphafold_header.'pdb'; done  > template_list.txt
+# Extract parent sequences
+#parent_sequences=`grep ">" ${extractedSequences} | sed 's.>..g'`
+
+for i in `awk 'sub(/^>/, "")' ${seqs}`; do
+  if grep -Fx ">\$i" ${extractedSequences}; then
+    #id_pdb=`echo \$i |  sed 's./._.g'`;  echo -e ">"\$i "_P_" "\${id_pdb}"_alphafold_header.'pdb' >> template_list.txt
+    id_pdb=`echo \$i |  sed 's./._.g'`;  echo -e ">"\$i "_P_" "\${id_pdb}" >> template_list.txt
+  else
+            echo "skipping \$i"
+  fi
+done
+
 
 # -------- Run alignment
 t_coffee -reg -reg_method dynamic_msa \

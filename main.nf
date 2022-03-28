@@ -42,18 +42,18 @@ nextflow.enable.dsl = 2
 //  Subsets of families - for testing
 seq2improve="cryst,blmb,rrm,subt,ghf5,sdr,tRNA-synt_2b,zf-CCHH,egf,Acetyltransf,ghf13,p450,Rhodanese,aat,az,cytb,proteasome,GEL"
 top20fam="gluts,myb_DNA-binding,tRNA-synt_2b,biotin_lipoyl,hom,ghf13,aldosered,hla,Rhodanese,PDZ,blmb,rhv,p450,adh,aat,rrm,Acetyltransf,sdr,zf-CCHH,rvp"
-testfam="seatoxin,scorptoxin,cyt3,rnasemam,bowman"
-smallfam="seatoxin"
+smallfam="seatoxin,scorptoxin,cyt3,rnasemam,bowman,hip,toxin,ghf11,TNF,sti"
+testfam="seatoxin,bowman"
+
 params.dataset_dir="/users/cn/lsantus/"
 //params.dataset_dir="/home/luisasantus/Desktop/crg_cluster"
-//params.dataset = "homfam"
 params.dataset = "homfam"
+//params.dataset = "extHomfam_v35-uniprot"
 params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/{${testfam}}.fa"
 params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/{${testfam}}.ref"
 
 //params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/*.fa"
 //params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/*.ref"
-//params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/*.dnd"
 
 
 params.align_methods = "FAMSA"
@@ -62,7 +62,7 @@ params.tree_methods = "FAMSA-medoid"
 params.buckets = "100"
 //  ## DYNAMIC parameters
 params.dynamicX = "100000"
-params.dynamicMasterAln="tcoffee_msa"
+params.dynamicMasterAln="3dcoffee_msa"
 params.dynamicMasterSize="100"
 params.dynamicSlaveAln="famsa_msa"
 params.dynamicSlaveSize="100000000"
@@ -74,7 +74,7 @@ if(params.dynamicMasterAln=="tcoffee_msa"){
   params.predict = true
 }
 
-
+params.cpu_flag="--cpu"
 params.dynamic_align=true
 params.regressive_align=true
 params.progressive_align=false
@@ -144,7 +144,7 @@ bucket_list = params.buckets.toString().tokenize(',')
 dynamicX = params.dynamicX.toString().tokenize(',')
 
 params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/${tree_method}/{${testfam}}*.dnd"
-
+//params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/${tree_method}/*.dnd"
 
 /*
  * main script flow
@@ -179,5 +179,17 @@ workflow {
  * completion handler
  */
  workflow.onComplete {
-   println "Execution status: ${ workflow.success ? 'OK' : 'failed' } runName: ${workflow.runName}"
+
+     def msg = """\
+         Pipeline execution summary
+         ---------------------------
+         Completed at: ${workflow.complete}
+         Duration    : ${workflow.duration}
+         Success     : ${workflow.success}
+         workDir     : ${workflow.workDir}
+         exit status : ${workflow.exitStatus}
+         """
+         .stripIndent()
+
+     sendMail(to: 'luisa.santus95@gmail.com', subject: 'My pipeline execution', body: msg)
  }

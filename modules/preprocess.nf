@@ -41,7 +41,7 @@ process EXTRACT_SEQUENCES {
   val dynamicValues
 
   output:
-  tuple val (id), path("*.fasta"), emit: extractedSequences
+  tuple val (id), val(tree_method),val(masterSize), path("*.fasta"), emit: extractedSequences
   path ".command.trace", emit: metricFile
 
   script:
@@ -53,13 +53,13 @@ process EXTRACT_SEQUENCES {
 process ADD_PDB_HEADERS{
   container 'edgano/tcoffee:pdb'
   tag "${fam_name}"
-  storeDir "${params.outdir}/structures/colabfold_header/${fam_name}/"
+  storeDir "${params.outdir}/structures/colabfold_header/${fam_name}.${tree_method}.${masterSize}/"
 
   input:
-  tuple val (fam_name), path (af2_pdb)
+  tuple val (fam_name), val(tree_method),val(masterSize), path (af2_pdb)
 
   output:
-  tuple val(fam_name), path("*_header.pdb"), emit: pdb
+  tuple val(fam_name),val(tree_method),val(masterSize), path("pdbs/*.pdb"), emit: pdb
   path("${fam_name}_plddt.eval"), emit: plddt
 
   script:
@@ -68,5 +68,8 @@ process ADD_PDB_HEADERS{
   # Store the
   for i in `find *_header.pdb`;do plddt=`awk '{print \$6"\t"\$11}' \$i | uniq | cut -f2 | awk '{ total += \$1 } END { print \$i total/(NR-1) }'`; echo \$i \$plddt >> plddt.eval; done
   sed 's/_alphafold_header.pdb//g' plddt.eval > ${fam_name}_plddt.eval
+
+  mkdir pdbs
+  for i in `find *_header.pdb`; do id_pdb=`echo \$i | sed 's._alphafold_header..g'`; mv \$i ./pdbs/\$id_pdb; done
   """
 }

@@ -32,7 +32,7 @@ process DYNAMIC_ALIGNER {
     container 'luisas/structural_regression'
     tag "$align_method - $tree_method on $id; ${masterAln}-${masterSize}:${slaveAln}-${slaveSize}"
     storeDir "${params.outdir}/alignments/$id/${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.${slaveAln}.${slaveSize}.${tree_method}"
-    label 'process_medium'
+    label 'process_small'
 
     input:
     tuple val(id), val(tree_method), path(seqs), path(guide_tree)
@@ -42,7 +42,7 @@ process DYNAMIC_ALIGNER {
     path (dynamicConfig)
     tuple val(masterAln), val(masterSize), val(slaveAln), val(slaveSize)
     val dynamicValues
-    tuple val (fam_name), path (structures)
+    tuple val (fam_name),val(tree_method), val(dynamicMasterSize), path (structures), path (extractedSequences)
 
     output:
     tuple val (id), path("${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.${slaveAln}.${slaveSize}.${tree_method}.aln"), emit: alignmentFile
