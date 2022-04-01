@@ -1,6 +1,6 @@
 #!/bin/bash nextflow
 
-include {GENERATE_DYNAMIC_CONFIG; EXTRACT_SEQUENCES; ADD_PDB_HEADERS}      from './preprocess.nf'
+include {GENERATE_DYNAMIC_CONFIG; EXTRACT_SEQUENCES; ADD_PDB_HEADERS; CHECK_CACHE}      from './preprocess.nf'
 include {REG_ALIGNER}       from './generateAlignment.nf'
 include {DYNAMIC_ALIGNER}             from './generateAlignment.nf'
 include {EVAL_ALIGNMENT}    from './modules_evaluateAlignment.nf'
@@ -15,6 +15,8 @@ workflow DYNAMIC_ANALYSIS {
     tree_method
     bucket_size
     dynamicX
+    structures
+    ids_done
 
   main:
 
@@ -39,30 +41,49 @@ workflow DYNAMIC_ANALYSIS {
     *  Align
     */
 
-    // If AF2 predicted structures are to be used
     if (params.predict){
-      // Extract sequences for prediction
+      // Extract sequences for which structures are needed
       EXTRACT_SEQUENCES(seqs_and_trees, align_method, bucket_size, dynamicX, configFile, configValues, dynamicValues)
-      // Predict with COLABFOLD
-      RUN_COLABFOLD(EXTRACT_SEQUENCES.out.extractedSequences)
-      // Prep PBD files for tcoffee
+
+      // 0. Check if structures have been produced
+      CHECK_CACHE(EXTRACT_SEQUENCES.out.extractedSequences,ids_done)
+
+      // 1A. PREDICT NEW STRUCTURES
+      // Only runs if some sequences do not have a structure predicted
+      RUN_COLABFOLD(CHECK_CACHE.out.seqToPredict.filter{ it[3].size()>0 })
       ADD_PDB_HEADERS(RUN_COLABFOLD.out.af2_pdb)
 
-      ADD_PDB_HEADERS.out.pdb
-        .combine(EXTRACT_SEQUENCES.out.extractedSequences, by: [0,1,2])
-        .set{ structures_ch }
-
+      // 1B. GET PRECOMPUTED STRUCTURES
+      precomputed_structures = CHECK_CACHE.out.idsDone
+                                          .map{ item -> [item.baseName.split("_")[0],
+                                                         item.baseName.split("_")[1],
+                                                         item.baseName.split("_")[2],
+                                                         item.splitText().collect { it.trim()},
+                                                         ]}
+                                          .transpose()
+                                          .map{ it -> [it[0], it[3], it[1], it[2]]}
+                                          .join(structures, by: [0,1])
+                                          .map{ it -> [it[0], it[2], it[3], it[4]]}
+      precomputed_structures.view()
+      // 2. Get a channel with both the newly and pre- computed structures
+      all_structures = ADD_PDB_HEADERS.out.pdb.concat(precomputed_structures)
+                                      .map{ it -> [it[0], it[1], it[3]] }
+                                      .groupTuple(by: [0,1])
+      all_structures.view()
     }else{
       structures = ""
     }
 
 
+    // Get everythin together ( sequences, references, trees, structures and parent sequences )
+    // The latter is now just for making sure everything is fine, can be removed later!
+    seqs_and_trees
+      .combine(all_structures, by: [0,1])
+      .combine(EXTRACT_SEQUENCES.out.extractedSequences.map{ it -> [it[0], it[1], it[3]] }, by: [0,1])
+      .set{ seqs_and_trees_and_structures }
 
-
-
-
-
-    DYNAMIC_ALIGNER (seqs_and_trees, align_method, bucket_size, dynamicX, configFile, configValues, dynamicValues, structures_ch)
+    seqs_and_trees_and_structures.view()
+    DYNAMIC_ALIGNER (seqs_and_trees_and_structures, align_method, bucket_size, dynamicX, configFile, configValues, dynamicValues)
 
 
 

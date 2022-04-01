@@ -2,15 +2,15 @@
 nextflow.enable.dsl=2
 
 process RUN_COLABFOLD {
-	tag "${fam_name}.${tree_method}.${dynamicMasterSize}"
-	storeDir "${params.outdir}/structures/colabfold/${fam_name}.${tree_method}.${dynamicMasterSize}"
+	tag "${fam_name}"
+	storeDir "${params.af2_db_path}/colabfold/${fam_name}"
 
 	input:
 	tuple val(fam_name),val(tree_method),val(dynamicMasterSize), path(fasta)
 
 	output:
 	path ("*"), emit: all_af2
-	tuple val(fam_name), val(tree_method),val(dynamicMasterSize),path ("*_alphafold.pdb"), emit: af2_pdb
+	tuple val(fam_name),val(tree_method),val(dynamicMasterSize),path ("*_alphafold.pdb"), emit: af2_pdb
 	path ".command.trace", emit: metricFile
 
 	script:

@@ -3,7 +3,7 @@ include { set_templates_path } from './functions.nf'
 path_templates = set_templates_path()
 
 process GENERATE_DYNAMIC_CONFIG {
-    container 'edgano/tcoffee:pdb'
+    container 'luisas/structural_regression'
     tag "Config 4 Dynamic"
     storeDir "${params.outdir}/dynamic_config/"
     label "small"
@@ -53,13 +53,13 @@ process EXTRACT_SEQUENCES {
 process ADD_PDB_HEADERS{
   container 'edgano/tcoffee:pdb'
   tag "${fam_name}"
-  storeDir "${params.outdir}/structures/colabfold_header/${fam_name}.${tree_method}.${masterSize}/"
+  storeDir "${params.af2_db_path}/colabfold_header/${fam_name}/"
 
   input:
   tuple val (fam_name), val(tree_method),val(masterSize), path (af2_pdb)
 
   output:
-  tuple val(fam_name),val(tree_method),val(masterSize), path("pdbs/*.pdb"), emit: pdb
+  tuple val(fam_name), path("pdbs/*.pdb"), emit: pdb
   path("${fam_name}_plddt.eval"), emit: plddt
 
   script:
@@ -70,6 +70,40 @@ process ADD_PDB_HEADERS{
   sed 's/_alphafold_header.pdb//g' plddt.eval > ${fam_name}_plddt.eval
 
   mkdir pdbs
-  for i in `find *_header.pdb`; do id_pdb=`echo \$i | sed 's._alphafold_header..g'`; mv \$i ./pdbs/\$id_pdb; done
+  for i in `find *_header.pdb`; do id_pdb=`echo \$i | sed 's._alphafold_header..g' | sed 's...g'`; mv \$i ./pdbs/\$id_pdb; done
   """
+}
+
+
+process CHECK_CACHE{
+
+  container 'luisas/structural_regression'
+
+  input:
+  tuple val(fam_name),val(tree_method),val(dynamicMasterSize), path(fasta)
+  val(ids_done)
+
+  output:
+  tuple val(fam_name),val(tree_method),val(dynamicMasterSize), path("toPredict.fasta"), emit: seqToPredict
+  path("${fam_name}_${tree_method}_${dynamicMasterSize}.txt"), emit: idsDone
+
+  shell:
+  $/
+  cat !{ids_done} > ids_done_full.txt
+
+  # Extract all ids in the fasta file
+  grep -o -E "^>.+" !{fasta} | tr -d ">" | sort | uniq > all_ids.txt
+
+  # Extract all ids that already have a predicted structure
+  sed 's/.pdb//g' ids_done_full.txt | sort | uniq > !{fam_name}_!{tree_method}_!{dynamicMasterSize}.txt
+
+  # Check which ones need to be predicted
+  diff --side-by-side --suppress-common-lines all_ids.txt !{fam_name}_!{tree_method}_!{dynamicMasterSize}.txt | cut -f1 > ids_to_predict.txt
+
+  # Get fasta with only the sequences that were not found in af2_db
+  awk 'NR==FNR{n[">"$$0];next} f{print f ORS $$0;f=""} $$0 in n{f=$$0}' ids_to_predict.txt !{fasta} > toPredict.fasta
+  cat toPredict.fasta | tr -d '[:space:]' > toPredict.fasta
+  /$
+
+
 }

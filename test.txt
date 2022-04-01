@@ -1,0 +1,4 @@
+1pbia_alphafold.pdb
+1tabi_alphafold.pdb
+REMOVE1bbi_alphafold.pdb
+TXW2_NAJAT_22-86_alphafold.pdb
