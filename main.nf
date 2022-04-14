@@ -42,37 +42,38 @@ nextflow.enable.dsl = 2
 //  Subsets of families - for testing
 seq2improve="cryst,blmb,rrm,subt,ghf5,sdr,tRNA-synt_2b,zf-CCHH,egf,Acetyltransf,ghf13,p450,Rhodanese,aat,az,cytb,proteasome,GEL"
 top20fam="gluts,myb_DNA-binding,tRNA-synt_2b,biotin_lipoyl,hom,ghf13,aldosered,hla,Rhodanese,PDZ,blmb,rhv,p450,adh,aat,rrm,Acetyltransf,sdr,zf-CCHH,rvp"
-smallfam="seatoxin,scorptoxin,cyt3,rnasemam,bowman,hip,toxin,ghf11,TNF,sti"
-testfam="bowman"
+testfam="seatoxin,scorptoxin,rnasemam,hip,toxin,ghf11,TNF,sti"
+testfambig="seatoxin,hip"
+smallfam="test"
 
 params.dataset_dir="/users/cn/lsantus/"
 //params.dataset_dir="/home/luisasantus/Desktop/crg_cluster"
 params.dataset = "homfam"
 //params.dataset = "extHomfam_v35-uniprot"
-params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/${testfam}.fa"
-params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/${testfam}.ref"
+params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/{${testfam}}.fa"
+params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/{${testfam}}.ref"
 
 //params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/*.fa"
 //params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/*.ref"
 
 //-- ------------------- AF2
 params.af2_db_path = "${params.dataset_dir}/data/structural_regression/af2_structures"
-structures = Channel.fromPath("${params.af2_db_path}/colabfold_header/${testfam}/**/*.pdb")
+structures = Channel.fromPath("${params.af2_db_path}/colabfold_header/{${testfam}}/**/*.pdb")
 structures_ch = structures.map { item -> [ item.getParent().getParent().baseName, item.baseName, item] }
-precomputed_structures_ids = structures_ch.collectFile() { item -> [ "ids_done.txt", item[1] + '\n' ]}
+precomputed_structures_ids = structures_ch.collectFile() { item -> [ "ids_done.txt", item[1] + '\n' ]}.collect()
 
 
 
 params.align_methods = "FAMSA"
 params.tree_methods = "FAMSA-medoid"
 
-params.buckets = "100"//50
+params.buckets = "10"//50
 //  ## DYNAMIC parameters
 params.dynamicX = "1"
 params.dynamicMasterAln="tcoffee_msa"
-params.dynamicMasterSize="100" //50
+params.dynamicMasterSize="50" //50
 params.dynamicSlaveAln="famsa_msa"
-params.dynamicSlaveSize="1000" //1000
+params.dynamicSlaveSize="100" //1000
 params.dynamicConfig=true
 
 if(params.dynamicMasterAln=="tcoffee_msa"){
@@ -83,11 +84,11 @@ if(params.dynamicMasterAln=="tcoffee_msa"){
 
 params.cpu_flag=""
 params.dynamic_align=true
-params.regressive_align=false
+params.regressive_align=true
 params.progressive_align=false
 params.split_seq=
 
-params.evaluate=false
+params.evaluate=true
 params.homoplasy=false
 params.easel=false
 params.metrics=false
@@ -151,7 +152,7 @@ align_method = params.align_methods.tokenize(',')
 bucket_list = params.buckets.toString().tokenize(',')
 dynamicX = params.dynamicX.toString().tokenize(',')
 
-params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/${tree_method}/${testfam}*.dnd"
+params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/${tree_method}/{${testfam}}*.dnd"
 //params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/${tree_method}/*.dnd"
 
 
@@ -201,5 +202,5 @@ workflow {
          """
          .stripIndent()
 
-     sendMail(to: 'luisa.santus95@gmail.com', subject: 'My pipeline execution', body: msg)
+     sendMail(to: 'luisa.santus95@gmail.com', subject: 'Structural regression pipeline', body: msg)
  }

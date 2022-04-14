@@ -1,21 +1,12 @@
 export VERBOSE_4_DYNAMIC=1
-
+export method_4_CLTCOFFEE=TMalign_pair
+export template_file_4_CLTCOFFEE="template_list.txt"
 # -------- Create template file
 # -------- Only extract parent sequences for the template!
 # Extract parent sequences
 #parent_sequences=`grep ">" ${extractedSequences} | sed 's.>..g'`
 
-for i in `awk 'sub(/^>/, "")' ${seqs}`; do
-  if grep -Fx ">\$i" ${extractedSequences}; then
-    #id_pdb=`echo \$i |  sed 's./._.g'`;  echo -e ">"\$i "_P_" "\${id_pdb}"_alphafold_header.'pdb' >> template_list.txt
-    id_pdb=`echo \$i |  sed 's./._.g'`;  echo -e ">"\$i "_P_" "\${id_pdb}" >> template_list.txt
-  else
-    echo "-"
-  fi
-done
-
-
-# -------- Run alignment   
+# -------- Run alignment
 t_coffee -reg -reg_method dynamic_msa \
           -seq ${seqs} \
           -reg_tree ${guide_tree} \
@@ -25,7 +16,6 @@ t_coffee -reg -reg_method dynamic_msa \
           -output fasta_aln \
           -thread 0 \
           -reg_homoplasy \
-          -template_file template_list.txt \
           -outfile ${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.${slaveAln}.${slaveSize}.${tree_method}.aln
 
 

@@ -13,3 +13,8 @@ t_coffee -reg -reg_method dynamic_msa \
           -dynamic_config ${dynamicConfig}
 
 mv seqdump.1 ${id}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.PARENTS.fasta
+
+
+for i in `awk 'sub(/^>/, "")' ${id}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.PARENTS.fasta`; do
+    id_pdb=`echo \$i |  sed 's./._.g'`;  echo -e ">"\$i "_P_" "\${id_pdb}" >> template_list.txt
+done

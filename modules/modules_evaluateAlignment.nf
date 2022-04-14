@@ -4,7 +4,7 @@ params.outdir = 'results'
 process EVAL_ALIGNMENT {
     container 'edgano/tcoffee:pdb'
     tag "EVAL_ALIGNMENT on $id"
-    storeDir "${params.outdir}/evaluation/score/"
+    //storeDir "${params.outdir}/evaluation/score/"
 
     input:
     tuple  val (id), file (test_alignment), file (ref_alignment)

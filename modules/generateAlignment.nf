@@ -29,10 +29,10 @@ process REG_ALIGNER {
 
 
 process DYNAMIC_ALIGNER {
-    container 'luisas/structural_regression'
+    container 'luisas/structural_regression:7'
     tag "$align_method - $tree_method on $id; ${masterAln}-${masterSize}:${slaveAln}-${slaveSize}"
     storeDir "${params.outdir}/alignments/$id/${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.${slaveAln}.${slaveSize}.${tree_method}"
-    label 'process_medium'
+    label 'process_small'
     afterScript 'sleep 10'
 
     input:

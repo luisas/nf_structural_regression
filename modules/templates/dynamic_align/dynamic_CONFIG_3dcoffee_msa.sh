@@ -12,7 +12,7 @@ export DUMP_ALN_BUCKETS=1
 for i in `awk 'sub(/^>/, "")' ${seqs}`; do
   if grep -Fx ">\$i" ${extractedSequences}; then
     #id_pdb=`echo \$i |  sed 's./._.g'`;  echo -e ">"\$i "_P_" "\${id_pdb}"_alphafold_header.'pdb' >> template_list.txt
-    id_pdb=`echo \$i |  sed 's./._.g'`;  echo -e ">"\$i "_P_" "\${id_pdb}" >> template_list.txt
+    id_pdb=`echo \$i |  sed 's./._.g'`;  echo -e ">"\$i "_P_" "\$PWD/\${id_pdb}" >> template_list.txt
   else
     echo "-"
   fi

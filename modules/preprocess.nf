@@ -42,6 +42,7 @@ process EXTRACT_SEQUENCES {
 
   output:
   tuple val (id), val(tree_method),val(masterSize), path("*.fasta"), emit: extractedSequences
+  tuple val (id), val(tree_method),val(masterSize), path("template_list.txt"), emit: templates
   path ".command.trace", emit: metricFile
 
   script:
@@ -54,34 +55,39 @@ process ADD_PDB_HEADERS{
   container 'edgano/tcoffee:pdb'
   tag "${fam_name}"
   storeDir "${params.af2_db_path}/colabfold_header/${fam_name}/"
+  label "process_small"
 
   input:
   tuple val (fam_name), val(tree_method),val(masterSize), path (af2_pdb)
 
   output:
   tuple val(fam_name), path("pdbs/*.pdb"), emit: pdb
-  path("${fam_name}_plddt.eval"), emit: plddt
+  path("plddts/*_plddt.eval"), emit: plddt
 
   script:
   """
+  # Add the headers
   for i in `find *.pdb`; do /tcoffee/t_coffee/src/extract_from_pdb -force -infile \$i > test.pdb; f="\$(basename -- \$i .pdb)"; mv test.pdb \${f}_header.pdb; done
-  # Store the
-  for i in `find *_header.pdb`;do plddt=`awk '{print \$6"\t"\$11}' \$i | uniq | cut -f2 | awk '{ total += \$1 } END { print \$i total/(NR-1) }'`; echo \$i \$plddt >> plddt.eval; done
-  sed 's/_alphafold_header.pdb//g' plddt.eval > ${fam_name}_plddt.eval
 
+  # Store the plddts summary
+  mkdir plddts
+  for i in `find *_header.pdb`;do name=`sed s/_alphafold_header.pdb//g <<< \$i`; plddt=`awk '{print \$6"\t"\$11}' \$i | uniq | cut -f2 | awk '{ total += \$1 } END { print \$i total/(NR-1) }'`; echo \$name \$plddt >> plddts/\${name}_plddt.eval;  done
+
+  # Store the pdbs
   mkdir pdbs
-  for i in `find *_header.pdb`; do id_pdb=`echo \$i | sed 's._alphafold_header..g' | sed 's...g'`; mv \$i ./pdbs/\$id_pdb; done
+  for i in `find *_header.pdb`; do id_pdb=`echo \$i | sed 's._alphafold_header..g'`; mv \$i ./pdbs/\$id_pdb; done
   """
 }
 
 
 process CHECK_CACHE{
 
+  tag "${fam_name}"
   container 'luisas/structural_regression'
 
   input:
   tuple val(fam_name),val(tree_method),val(dynamicMasterSize), path(fasta)
-  val(ids_done)
+  path(ids_done)
 
   output:
   tuple val(fam_name),val(tree_method),val(dynamicMasterSize), path("toPredict.fasta"), emit: seqToPredict
@@ -98,11 +104,13 @@ process CHECK_CACHE{
   sed 's/.pdb//g' ids_done_full.txt | sort | uniq > !{fam_name}_!{tree_method}_!{dynamicMasterSize}.txt
 
   # Check which ones need to be predicted
-  diff --side-by-side --suppress-common-lines all_ids.txt !{fam_name}_!{tree_method}_!{dynamicMasterSize}.txt | cut -f1 > ids_to_predict.txt
+  # diff --side-by-side --suppress-common-lines all_ids.txt !{fam_name}_!{tree_method}_!{dynamicMasterSize}.txt | cut -f1 > ids_to_predict.txt
+  touch ids_to_predict.txt
+  for id_fasta in `cat all_ids.txt`; do id_fasta_clean=`sed 's./._.g' <<< $$id_fasta`; if grep -Fqx $$id_fasta_clean !{fam_name}_!{tree_method}_!{dynamicMasterSize}.txt ; then continue; else echo $$id_fasta >> ids_to_predict.txt; fi;  done
 
   # Get fasta with only the sequences that were not found in af2_db
   awk 'NR==FNR{n[">"$$0];next} f{print f ORS $$0;f=""} $$0 in n{f=$$0}' ids_to_predict.txt !{fasta} > toPredict.fasta
-  cat toPredict.fasta | tr -d '[:space:]' > toPredict.fasta
+  # cat toPredict.fasta | tr -d '[:space:]' > toPredict.fasta
   /$
 
 

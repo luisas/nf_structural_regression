@@ -18,7 +18,7 @@ precomputed_structures_ids = structures_ch.collectFile() { item -> [ "ids_done.t
 
 Channel.fromPath("${params.fasta}").filter{ it.size()>0 }.view()
 
-
+params.a = "a"
 process CHECK_CACHE{
 
   input:
@@ -26,11 +26,13 @@ process CHECK_CACHE{
   val(fam)
 
   output:
-  val(fam), val(ids_done), emit: idsDone
+  tuple val(fam), val(ids_done), emit: idsDone
+  tuple val("${params.a}"), path("done.txt"), path(".command.trace"), emit: metricFile
 
   script:
   """
-  cat ${ids_done} > done.txt
+  echo ${ids_done} > done.txt
+  echo ${params.a} > test.txt
   """
 
 }
@@ -38,27 +40,11 @@ process CHECK_CACHE{
 
 
 workflow pipeline {
-  //CHECK_CACHE(ids_done,"test")
-  params.list = "test.txt"
-  Channel.fromPath("${params.list}")
-        .map{ item -> [item.baseName, "A", item.splitText().collect { it.trim().replaceAll("_alphafold.pdb","") }]}
-        .transpose()
-        .set { ids_done }
+  CHECK_CACHE("aa","test")
+  CHECK_CACHE.out.metricFile
+                 .map{ it ->  "${it[0]};${it[1].text};\n${it[2].text}" }
+                 .collectFile(name: "trace", newLine: true, storeDir:"$baseDir/cachetesting/")
 
-  fam = "test"
-  structures = Channel.fromPath("${params.af2_db_path}/colabfold_header/${fam}/**/*.pdb")
-                      .map{ it -> [it.getParent().getParent().baseName, it.baseName, it]}.view()
-
-
-  structures.join(ids_done, by: [0,1]).view()
-
-  ids_done.map{ it -> [it[0], it[2]] }.groupTuple().view()
-  // Channel.fromPath(params.list)
-  //         .splitText()
-  //         .map { file(params.af2_db_path + "/" +  it) }
-  //         .set { file_list }
-  //
-  // file_list.view()
 
 }
 
