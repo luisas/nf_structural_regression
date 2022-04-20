@@ -55,18 +55,17 @@ process DYNAMIC_ALIGNER {
 }
 
 
-
 process PROG_ALIGNER {
-    container 'edgano/tcoffee:pdb'
+    container 'luisas/structural_regression:7'
     tag "$align_method - $tree_method on $id"
-    publishDir "${params.outdir}/alignments", pattern: '*.aln'
+    storeDir "${params.outdir}/alignments/${id}/${id}.progressive.${align_method}.${tree_method}"
 
     input:
     tuple val(id), val(tree_method), path(seqs), path(guide_tree)
     each align_method
 
     output:
-    tuple val (id), path ("${id}.prog.*.tree.aln"), emit: alignmentFile
+    tuple val (id), path ("${id}.progressive.*.aln"), emit: alignmentFile
     path ".command.trace", emit: metricFile
 
     script:

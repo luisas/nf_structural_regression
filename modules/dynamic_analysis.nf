@@ -110,7 +110,7 @@ workflow DYNAMIC_ANALYSIS {
 
       EVAL_ALIGNMENT.out.scores.view()
       EVAL_ALIGNMENT.out.scores.map{ it -> "${it.baseName};${it.text}" }
-                    .collectFile(name: "dynamic.scores_${params.buckets}.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
+                    .collectFile(name: "dynamic.scores_${params.dynamicMasterAln}_${params.buckets}.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
     }
 
 

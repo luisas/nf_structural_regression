@@ -46,6 +46,8 @@ testfam="seatoxin,scorptoxin,rnasemam,hip,toxin,ghf11,TNF,sti"
 testfambig="seatoxin,hip"
 smallfam="test"
 
+testfamnew = "kringle,cryst,DEATH,cah,mmp,rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL"
+
 params.dataset_dir="/users/cn/lsantus/"
 //params.dataset_dir="/home/luisasantus/Desktop/crg_cluster"
 params.dataset = "homfam"
@@ -67,7 +69,7 @@ precomputed_structures_ids = structures_ch.collectFile() { item -> [ "ids_done.t
 params.align_methods = "FAMSA"
 params.tree_methods = "FAMSA-medoid"
 
-params.buckets = "10"//50
+params.buckets = "30"//50
 //  ## DYNAMIC parameters
 params.dynamicX = "1"
 params.dynamicMasterAln="tcoffee_msa"
@@ -151,6 +153,7 @@ tree_method = params.tree_methods.tokenize(',')
 align_method = params.align_methods.tokenize(',')
 bucket_list = params.buckets.toString().tokenize(',')
 dynamicX = params.dynamicX.toString().tokenize(',')
+
 
 params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/${tree_method}/{${testfam}}*.dnd"
 //params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/${tree_method}/*.dnd"

@@ -24,7 +24,7 @@ workflow REG_ANALYSIS {
         .set { alignment_and_ref }
       EVAL_ALIGNMENT (alignment_and_ref)
       EVAL_ALIGNMENT.out.scores.map{ it -> "${it.baseName};${it.text}" }
-                    .collectFile(name: "regressive.scores_${params.buckets}.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
+                    .collectFile(name: "regressive.scores_${align_method}_${params.buckets}.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
     }
 
     emit:
