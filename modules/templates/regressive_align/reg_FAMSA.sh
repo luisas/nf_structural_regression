@@ -11,5 +11,6 @@ t_coffee -reg -reg_method famsa_msa \
          -seq ${seqs} \
          -reg_nseq ${bucket_size} \
          -reg_homoplasy \
+         -thread ${task.cpus} \
          \$compressFlag \
          -outfile ${id}.regressive.${bucket_size}.${align_method}.${tree_method}.aln 2> tcoffee.stderr

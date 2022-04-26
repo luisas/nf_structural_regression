@@ -29,7 +29,6 @@
  * Jose Espinosa-Carrasco
  */
 
-//  example         https://github.com/nextflow-io/rnaseq-nf/tree/modules
 /*
  * enables modules
  */
@@ -39,70 +38,43 @@ nextflow.enable.dsl = 2
  * defaults parameter definitions
  */
 
-//  Subsets of families - for testing
-seq2improve="cryst,blmb,rrm,subt,ghf5,sdr,tRNA-synt_2b,zf-CCHH,egf,Acetyltransf,ghf13,p450,Rhodanese,aat,az,cytb,proteasome,GEL"
-top20fam="gluts,myb_DNA-binding,tRNA-synt_2b,biotin_lipoyl,hom,ghf13,aldosered,hla,Rhodanese,PDZ,blmb,rhv,p450,adh,aat,rrm,Acetyltransf,sdr,zf-CCHH,rvp"
-testfam="seatoxin,scorptoxin,rnasemam,hip,toxin,ghf11,TNF,sti"
-testfambig="seatoxin,hip"
-smallfam="test"
-
-testfamnew = "kringle,cryst,DEATH,cah,mmp,rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL"
+testfamsmall="seatoxin,scorptoxin,rnasemam,hip,toxin,ghf11,TNF,sti"
+testfam="seatoxin,hip,GEL"
+testfammedium = "kringle,cryst,DEATH,cah,mmp,rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL"
 
 params.dataset_dir="/users/cn/lsantus/"
-//params.dataset_dir="/home/luisasantus/Desktop/crg_cluster"
 params.dataset = "homfam"
-//params.dataset = "extHomfam_v35-uniprot"
 params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/{${testfam}}.fa"
 params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/{${testfam}}.ref"
-
-//params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/*.fa"
-//params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/*.ref"
-
-//-- ------------------- AF2
 params.af2_db_path = "${params.dataset_dir}/data/structural_regression/af2_structures"
-structures = Channel.fromPath("${params.af2_db_path}/colabfold_header/{${testfam}}/**/*.pdb")
-structures_ch = structures.map { item -> [ item.getParent().getParent().baseName, item.baseName, item] }
-precomputed_structures_ids = structures_ch.collectFile() { item -> [ "ids_done.txt", item[1] + '\n' ]}.collect()
-
-
 
 params.align_methods = "FAMSA"
 params.tree_methods = "FAMSA-medoid"
 
-params.buckets = "30"//50
+params.buckets = "50"
 //  ## DYNAMIC parameters
 params.dynamicX = "1"
-params.dynamicMasterAln="tcoffee_msa"
-params.dynamicMasterSize="50" //50
+params.dynamicMasterAln="famsa_msa"
 params.dynamicSlaveAln="famsa_msa"
-params.dynamicSlaveSize="100" //1000
-params.dynamicConfig=true
 
-if(params.dynamicMasterAln=="tcoffee_msa"){
-  params.predict = true
-}else{
-  params.predict = true
-}
-
+params.predict = true
 params.cpu_flag=""
+
+params.max_cpus=16
+
 params.dynamic_align=true
-params.regressive_align=true
+params.regressive_align=false
 params.progressive_align=false
-params.split_seq=
 
 params.evaluate=true
-params.homoplasy=false
-params.easel=false
-params.metrics=false
-params.compressAZ=false
+
 
 // output directory
 params.outdir = "$baseDir/results/${params.dataset}"
-params.structures_dir="$baseDir/results/structures/"
 
 
 log.info """\
-         PIPELINE  ~  version 0.1"
+         STRUCTURAL REGRESSION  ~  version 0.1"
          ======================================="
          Input sequences (FASTA)                        : ${params.seqs}
          Input references (Aligned FASTA))              : ${params.refs}
@@ -117,9 +89,9 @@ log.info """\
          --##--
          Generate Dynamic alignments                    : ${params.dynamic_align}
                   Dynamic size                          : ${params.dynamicX}
-                  Dynamic config file                   : ${params.dynamicConfig}
-                          master align - boundary       : ${params.dynamicMasterAln} - ${params.dynamicMasterSize}
-                          slave align  - boundary       : ${params.dynamicSlaveAln} - ${params.dynamicSlaveSize}
+                  Dynamic config
+                          master align                  : ${params.dynamicMasterAln}
+                          slave align                   : ${params.dynamicSlaveAln}
                   Use AF2 predictions                   : ${params.predict}
          --##--
          Evaluate                                       : ${params.evaluate}
@@ -133,31 +105,24 @@ include { DYNAMIC_ANALYSIS } from './modules/dynamic_analysis'    params(params)
 include { REG_ANALYSIS } from './modules/reg_analysis'        params(params)
 include { PROG_ANALYSIS } from './modules/prog_analysis'        params(params)
 
-// Channels containing sequences
+// Channels
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item] }
+
+structures_ch = Channel.fromPath("${params.af2_db_path}/colabfold_header/{${testfam}}/**/*.pdb")
+                       .map { item -> [ item.getParent().getParent().baseName, item.baseName, item] }
 
 if ( params.refs ) {
   refs_ch = Channel.fromPath( params.refs ).map { item -> [ item.baseName, item] }
 }
 
-// Channels for user provided trees or empty channel if trees are to be generated [OPTIONAL]
-if ( params.trees ) {
-  trees = Channel.fromPath(params.trees)
-    .map { item -> [ item.baseName.tokenize('.')[0], item.baseName.tokenize('.')[1], item] }
-}else {
-  Channel.empty().set { trees }
-}
 
 // Tokenize params
 tree_method = params.tree_methods.tokenize(',')
 align_method = params.align_methods.tokenize(',')
 bucket_list = params.buckets.toString().tokenize(',')
 dynamicX = params.dynamicX.toString().tokenize(',')
-
-
-params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/${tree_method}/{${testfam}}*.dnd"
-//params.trees ="${params.dataset_dir}/data/structural_regression/${params.dataset}/trees/*/${tree_method}/*.dnd"
-
+dynamicMasterAln = params.dynamicMasterAln.tokenize(',')
+dynamicSlaveAln = params.dynamicSlaveAln.tokenize(',')
 
 
 /*
@@ -171,7 +136,6 @@ workflow pipeline {
         .map { it -> [ it[1][0], it[1][1], it[0][1], it[1][2] ] }
         .set { seqs_and_trees }
 
-    // Run MSA
     if (params.regressive_align){
       REG_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method, bucket_list)
     }
@@ -181,7 +145,7 @@ workflow pipeline {
     }
 
     if (params.dynamic_align){
-      DYNAMIC_ANALYSIS(seqs_and_trees, refs_ch, tree_method, bucket_list, dynamicX, structures_ch, precomputed_structures_ids)
+      DYNAMIC_ANALYSIS(seqs_and_trees, refs_ch, tree_method, bucket_list, dynamicMasterAln, dynamicSlaveAln, dynamicX, structures_ch)
     }
 }
 

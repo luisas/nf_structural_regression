@@ -14,6 +14,7 @@ workflow REG_ANALYSIS {
     tree_method
     bucket_size
 
+
   main:
     REG_ALIGNER (seqs_and_trees, align_method, bucket_size)
 
@@ -22,7 +23,7 @@ workflow REG_ANALYSIS {
         .cross (REG_ALIGNER.out.alignmentFile)
         .map { it -> [ it[1][0], it[1][1], it[0][1] ] }
         .set { alignment_and_ref }
-      EVAL_ALIGNMENT (alignment_and_ref)
+      EVAL_ALIGNMENT (alignment_and_ref, align_method, bucket_size, "")
       EVAL_ALIGNMENT.out.scores.map{ it -> "${it.baseName};${it.text}" }
                     .collectFile(name: "regressive.scores_${align_method}_${params.buckets}.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
     }

@@ -14,39 +14,37 @@ workflow DYNAMIC_ANALYSIS {
     refs_ch
     tree_method
     bucket_size
+    dynamicMasterAln
+    dynamicSlaveAln
     dynamicX
     structures
-    ids_done
 
   main:
 
     /*
     *  Generate configuration for running dynamic t-coffee
     */
-    if(params.dynamicConfig){
-      GENERATE_DYNAMIC_CONFIG(params.dynamicMasterAln, params.dynamicMasterSize, params.dynamicSlaveAln, params.dynamicSlaveSize)
-      align_method="CONFIG"
-      configFile = GENERATE_DYNAMIC_CONFIG.out.configFile
-      configValues = GENERATE_DYNAMIC_CONFIG.out.configValues
-      dynamicValues = "${params.dynamicMasterAln}.${params.dynamicMasterSize}_${params.dynamicSlaveAln}.${params.dynamicSlaveSize}"
-    }else{
-      align_method="DEFAULT"
-      configFile = "/"
-      configValues=["","","",""]
-      dynamicValues = "DEFAULT"
-    }
-
+    GENERATE_DYNAMIC_CONFIG(dynamicMasterAln, dynamicSlaveAln, bucket_size, dynamicX)
 
     /*
     *  Align
     */
 
+    // Test all configurations
+    seqs_and_trees
+        .combine(GENERATE_DYNAMIC_CONFIG.out.config)
+        .set { seqs_and_trees_configs }
+
+
+
     if (params.predict){
+
+      ids_done = structures.collectFile() { item -> [ "ids_done.txt", item[1] + '\n' ]}.collect()
+      ids_done.view()
       // Extract sequences for which structures are needed
-      EXTRACT_SEQUENCES(seqs_and_trees, align_method, bucket_size, dynamicX, configFile, configValues, dynamicValues)
+      EXTRACT_SEQUENCES(seqs_and_trees_configs)
 
       // 0. Check if structures have been produced
-      ids_done.view()
       CHECK_CACHE(EXTRACT_SEQUENCES.out.extractedSequences,ids_done)
 
       // 1A. PREDICT NEW STRUCTURES
@@ -78,7 +76,7 @@ workflow DYNAMIC_ANALYSIS {
       //all_structures.view()
       seqs_and_trees
         .combine(all_structures, by: [0,1])
-        .combine(EXTRACT_SEQUENCES.out.templates.map{ it -> [it[0], it[1], it[3]] }, by: [0,1])
+        .combine(EXTRACT_SEQUENCES.out.templates.map{ it -> [it[0], it[1], it[3], it[2], it[4], it[5], it[6], it[7]] }, by: [0,1])
         .set{ seqs_and_trees_and_structures }
 
     }else{
@@ -87,13 +85,9 @@ workflow DYNAMIC_ANALYSIS {
     }
 
 
-    // Get everythin together ( sequences, references, trees, structures and parent sequences )
-    // The latter is now just for making sure everything is fine, can be removed later!
-
-
     //seqs_and_trees_and_structures.view()
-    DYNAMIC_ALIGNER (seqs_and_trees_and_structures, align_method, bucket_size, dynamicX, configFile, configValues, dynamicValues)
 
+    DYNAMIC_ALIGNER (seqs_and_trees_and_structures)
 
 
     /*
@@ -105,12 +99,10 @@ workflow DYNAMIC_ANALYSIS {
         .map { it -> [ it[1][0], it[1][1], it[0][1] ] }
         .set { alignment_and_ref }
 
-      alignment_and_ref.view()
-      EVAL_ALIGNMENT (alignment_and_ref)
-
-      EVAL_ALIGNMENT.out.scores.view()
-      EVAL_ALIGNMENT.out.scores.map{ it -> "${it.baseName};${it.text}" }
-                    .collectFile(name: "dynamic.scores_${params.dynamicMasterAln}_${params.buckets}.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
+      EVAL_ALIGNMENT(alignment_and_ref)
+      EVAL_ALIGNMENT.out.scores.collect().view()
+      EVAL_ALIGNMENT.out.scores
+                    .collectFile(name: "dynamic.scores.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
     }
 
 

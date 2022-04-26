@@ -10,11 +10,12 @@ t_coffee -reg -reg_method dynamic_msa \
           -reg_tree ${guide_tree} \
           -reg_nseq ${bucket_size} \
           -dynamic ${dynamicX} \
+          -thread ${task.cpus} \
           -dynamic_config ${dynamicConfig}
 
-mv seqdump.1 ${id}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.PARENTS.fasta
+mv seqdump.1 ${id}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${bucket_size}.${guide_tree}.PARENTS.fasta
 
 
-for i in `awk 'sub(/^>/, "")' ${id}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.PARENTS.fasta`; do
+for i in `awk 'sub(/^>/, "")' ${id}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${bucket_size}.${guide_tree}.PARENTS.fasta`; do
     id_pdb=`echo \$i |  sed 's./._.g'`;  echo -e ">"\$i "_P_" "\${id_pdb}" >> template_list.txt
 done

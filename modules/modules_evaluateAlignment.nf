@@ -2,12 +2,19 @@
 params.outdir = 'results'
 
 process EVAL_ALIGNMENT {
-    container 'edgano/tcoffee:pdb'
+    container 'luisas/structural_regression:7'
     tag "EVAL_ALIGNMENT on $id"
-    //storeDir "${params.outdir}/evaluation/score/"
+    storeDir "${params.outdir}/evaluation/score/"
+    label "process_low"
 
     input:
-    tuple  val (id), file (test_alignment), file (ref_alignment)
+    // val align_type
+    // each masterAln
+    // each bucket_size
+    // each dynamicX
+    // each slaveAln
+    // each tree_method
+    tuple  val(id), file (test_alignment), file (ref_alignment)
 
     output:
     path ("${test_alignment.baseName}.scores"), emit: scores
@@ -42,7 +49,8 @@ process EVAL_ALIGNMENT {
              awk '{ print \$4}' ORS="\t" \
              >> "scores.txt"
 
-    cat scores.txt | tr -s '[:blank:]' ';'  >  ${test_alignment.baseName}.scores
+    cat scores.txt | tr -s '[:blank:]' ';'  >  "${test_alignment.baseName}.scores"
+    sed -i 's/^/${test_alignment.baseName};/' "${test_alignment.baseName}.scores"
     """
 }
 

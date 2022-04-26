@@ -3,46 +3,41 @@ include { set_templates_path } from './functions.nf'
 path_templates = set_templates_path()
 
 process GENERATE_DYNAMIC_CONFIG {
-    container 'luisas/structural_regression'
+    container 'luisas/structural_regression:7'
     tag "Config 4 Dynamic"
     storeDir "${params.outdir}/dynamic_config/"
-    label "small"
+    label "process_low"
 
     input:
-    val (masterAln)
-    val (masterSize)
-    val (slaveAln)
-    val (slaveSize)
+    each masterAln
+    each slaveAln
+    each bucket_size
+    each dynamicX
 
     output:
-    path "${masterAln}.${masterSize}_${slaveAln}.${slaveSize}.config", emit: configFile
-    tuple val(masterAln), val(masterSize), val(slaveAln), val(slaveSize), emit: configValues
+    tuple val(masterAln), val(slaveAln), val(bucket_size), val(dynamicX), path("${masterAln}_${slaveAln}_${bucket_size}_${dynamicX}.config"), emit: config
 
     script:
     """
-    echo '${masterAln} ${masterSize}' > ${masterAln}.${masterSize}_${slaveAln}.${slaveSize}.config
-    echo '${slaveAln} ${slaveSize}' >> ${masterAln}.${masterSize}_${slaveAln}.${slaveSize}.config
+    echo '${masterAln} 1' > ${masterAln}_${slaveAln}_${bucket_size}_${dynamicX}.config
+    echo '${slaveAln} 1' >> ${masterAln}_${slaveAln}_${bucket_size}_${dynamicX}.config
     """
 }
 
 
 process EXTRACT_SEQUENCES {
-  container 'edgano/tcoffee:pdb'
-  tag "$align_method - $tree_method on $id; ${masterAln}-${masterSize}:${slaveAln}-${slaveSize}"
-  storeDir "${params.outdir}/seqs_extracted/${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${masterSize}.${slaveAln}.${slaveSize}.${tree_method}"
+  container 'luisas/structural_regression:7'
+  tag "$id; ${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}"
+  storeDir "${params.outdir}/seqs_extracted/${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}"
+  label "process_low"
+
 
   input:
-  tuple val(id), val(tree_method), path(seqs), path(guide_tree)
-  val align_method
-  each bucket_size
-  each dynamicX
-  path (dynamicConfig)
-  tuple val(masterAln), val(masterSize), val(slaveAln), val(slaveSize)
-  val dynamicValues
+  tuple val(id), val(tree_method), path(seqs), path(guide_tree), val(masterAln), val(slaveAln), val(bucket_size), val(dynamicX), path(dynamicConfig)
 
   output:
-  tuple val (id), val(tree_method),val(masterSize), path("*.fasta"), emit: extractedSequences
-  tuple val (id), val(tree_method),val(masterSize), path("template_list.txt"), emit: templates
+  tuple val (id), val(tree_method),val(bucket_size), path("*.fasta"), emit: extractedSequences
+  tuple val (id), val(tree_method),val(bucket_size), path("template_list.txt"), val(masterAln), val(slaveAln), val(dynamicX),path(dynamicConfig),emit: templates
   path ".command.trace", emit: metricFile
 
   script:
@@ -52,10 +47,10 @@ process EXTRACT_SEQUENCES {
 
 
 process ADD_PDB_HEADERS{
-  container 'edgano/tcoffee:pdb'
+  container 'luisas/structural_regression:7'
   tag "${fam_name}"
   storeDir "${params.af2_db_path}/colabfold_header/${fam_name}/"
-  label "process_small"
+  label "process_low"
 
   input:
   tuple val (fam_name), val(tree_method),val(masterSize), path (af2_pdb)
@@ -83,7 +78,9 @@ process ADD_PDB_HEADERS{
 process CHECK_CACHE{
 
   tag "${fam_name}"
-  container 'luisas/structural_regression'
+  container 'luisas/structural_regression:7'
+  label "process_low"
+
 
   input:
   tuple val(fam_name),val(tree_method),val(dynamicMasterSize), path(fasta)
