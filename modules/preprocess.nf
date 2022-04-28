@@ -47,9 +47,9 @@ process EXTRACT_SEQUENCES {
 
 
 process ADD_PDB_HEADERS{
-  container 'luisas/structural_regression:7'
+  container 'edgano/tcoffee:pdb'
   tag "${fam_name}"
-  storeDir "${params.af2_db_path}/colabfold_header/${fam_name}/"
+  publishDir "${params.af2_db_path}/colabfold_header/${fam_name}/", mode: 'copy', overwrite: true
   label "process_low"
 
   input:

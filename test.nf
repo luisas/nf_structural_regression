@@ -9,43 +9,27 @@ Channel.fromPath("${params.af2_db_path}/**/*_alphafold.pdb").collectFile() { ite
        [ "ids_done.txt", item.name + '\n' ]
    }.set{ids_done}
 
-testfam = "test"
+testfam = "test,seatoxin"
 structures = Channel.fromPath("${params.af2_db_path}/colabfold_header/${testfam}/**/*.pdb")
 structures_ch = structures.map { item -> [ item.getParent().getParent().baseName, item.baseName, item] }
 structures_ch.view()
 precomputed_structures_ids = structures_ch.collectFile() { item -> [ "ids_done.txt", item[1] + '\n' ]}.view()
 
+//.map{it -> it.replace("id:", "")}
 
-Channel.fromPath("${params.fasta}").filter{ it.size()>0 }.view()
+fastasplit = Channel.fromPath("${params.fasta}")
+       .filter{ it.size()>0 }
+       .splitFasta(record: [id: true])
 
-params.a = "a"
-process CHECK_CACHE{
+fastasplit.view()
+println(fastasplit.getClass())
 
-  input:
-  val(ids_done)
-  val(fam)
-
-  output:
-  tuple val(fam), val(ids_done), emit: idsDone
-  tuple val("${params.a}"), path("done.txt"), path(".command.trace"), emit: metricFile
-
-  script:
-  """
-  echo ${ids_done} > done.txt
-  echo ${params.a} > test.txt
-  """
-
-}
+fastasplit.map{it -> it.replace("id:", "")}.view()
 
 
 
 workflow pipeline {
-  CHECK_CACHE("aa","test")
-  CHECK_CACHE.out.metricFile
-                 .map{ it ->  "${it[0]};${it[1].text};\n${it[2].text}" }
-                 .collectFile(name: "trace", newLine: true, storeDir:"$baseDir/cachetesting/")
-
-
+  //CHECK_CACHE("aa","test")
 }
 
 

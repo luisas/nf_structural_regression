@@ -39,8 +39,10 @@ workflow DYNAMIC_ANALYSIS {
 
     if (params.predict){
 
-      ids_done = structures.collectFile() { item -> [ "ids_done.txt", item[1] + '\n' ]}.collect()
-      ids_done.view()
+      ids_done = structures.ifEmpty(">--")
+                           .collectFile() { item -> [ "ids_done.txt", item[1] + '\n' ]}
+                           .collect()
+
       // Extract sequences for which structures are needed
       EXTRACT_SEQUENCES(seqs_and_trees_configs)
 
@@ -49,12 +51,12 @@ workflow DYNAMIC_ANALYSIS {
 
       // 1A. PREDICT NEW STRUCTURES
       // Only runs if some sequences do not have a structure predicted
-      RUN_COLABFOLD(CHECK_CACHE.out.seqToPredict.filter{ it[3].size()>0 })
-      RUN_COLABFOLD.out.metricFile
-                     .map{ it ->  "${it[0]}\n${it[1].text}\n${it[2].text}" }
-                     .collectFile(name: "${workflow.runName}.trace", newLine: true, storeDir:"${params.af2_db_path}/colabfold/traces/")
+      // Split Fasta and run colabfold on chunks
+      RUN_COLABFOLD(CHECK_CACHE.out.seqToPredict.filter{ it[3].size()>0 }.splitFasta( by: 2, file: true ))
       ADD_PDB_HEADERS(RUN_COLABFOLD.out.af2_pdb)
 
+
+//.groupTuple(by:[0,1,2]).map{ it -> [it[0],it[1],it[2],it[3].flatten()]}
 
       // 1B. GET PRECOMPUTED STRUCTURES
       precomputed_structures = CHECK_CACHE.out.idsDone
@@ -69,23 +71,32 @@ workflow DYNAMIC_ANALYSIS {
                                           .map{ it -> [it[0], it[2], it[3], it[4]]}
 
       // 2. Get a channel with both the newly and pre- computed structures
-      all_structures = ADD_PDB_HEADERS.out.pdb.concat(precomputed_structures)
+      all_structures = ADD_PDB_HEADERS.out.pdb.groupTuple(by:[0,1,2])
+                                      .map{ it -> [it[0],it[1],it[2],it[3].flatten()]}
+                                      .concat(precomputed_structures)
                                       .map{ it -> [it[0], it[1], it[3]] }
                                       .groupTuple(by: [0,1])
 
-      //all_structures.view()
       seqs_and_trees
         .combine(all_structures, by: [0,1])
         .combine(EXTRACT_SEQUENCES.out.templates.map{ it -> [it[0], it[1], it[3], it[2], it[4], it[5], it[6], it[7]] }, by: [0,1])
         .set{ seqs_and_trees_and_structures }
 
+    seqs_and_trees_and_structures.view()
+
     }else{
-      empty = Channel.from('p','q').collect()
-      structures = ""
+       // TO BE TESTED!!
+      structures = Channel.empty().ifEmpty("--")
+                           .collectFile() { item -> ["DUMMY_FILE"]}
+                           .collect()
+      structures.view()
+      seqs_and_trees
+        .cross(all_structures)
+        .combine(EXTRACT_SEQUENCES.out.templates.map{ it -> [it[0], it[1], it[3], it[2], it[4], it[5], it[6], it[7]] }, by: [0,1])
+        .set{ seqs_and_trees_and_structures }
+
+      seqs_and_trees_and_structures.view()
     }
-
-
-    //seqs_and_trees_and_structures.view()
 
     DYNAMIC_ALIGNER (seqs_and_trees_and_structures)
 

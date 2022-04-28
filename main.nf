@@ -39,8 +39,10 @@ nextflow.enable.dsl = 2
  */
 
 testfamsmall="seatoxin,scorptoxin,rnasemam,hip,toxin,ghf11,TNF,sti"
-testfam="seatoxin,hip,GEL"
+//testfam="seatoxin,cryst"
+testfam="seatoxin,scorptoxin"
 testfammedium = "kringle,cryst,DEATH,cah,mmp,rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL"
+testfamlerge= "kringle,cryst,DEATH,cah,mmp,rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL"
 
 params.dataset_dir="/users/cn/lsantus/"
 params.dataset = "homfam"
@@ -53,8 +55,8 @@ params.tree_methods = "FAMSA-medoid"
 
 params.buckets = "50"
 //  ## DYNAMIC parameters
-params.dynamicX = "1"
-params.dynamicMasterAln="famsa_msa"
+params.dynamicX = "1,2,3"
+params.dynamicMasterAln="famsa_msa,tcoffee_msa"
 params.dynamicSlaveAln="famsa_msa"
 
 params.predict = true
@@ -78,7 +80,7 @@ log.info """\
          ======================================="
          Input sequences (FASTA)                        : ${params.seqs}
          Input references (Aligned FASTA))              : ${params.refs}
-         Input trees (NEWICK)                           : ${params.trees}
+         Input trees (NEWICK)                           : ${params.outdir}/trees/
          Alignment methods                              : ${params.align_methods}
          Tree methods                                   : ${params.tree_methods}
          Bucket size                                    : ${params.buckets}
