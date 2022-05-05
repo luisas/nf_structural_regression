@@ -8,7 +8,7 @@ process TREE_GENERATION {
     container 'luisas/structural_regression'
     tag "$tree_method on $id"
     storeDir "${params.outdir}/trees/${id}/${id}.${tree_method}"
-    label "process_big"
+    label "process_medium"
 
     input:
     tuple val(id), path(seqs)

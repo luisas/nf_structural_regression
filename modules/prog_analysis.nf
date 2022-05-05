@@ -14,12 +14,15 @@ workflow PROG_ANALYSIS {
     PROG_ALIGNER (seqs_and_trees, align_method)
 
     if (params.evaluate){
+
+      alignments = PROG_ALIGNER.out.alignmentFile.map{ it -> [ it[0].replaceAll("_ref", ""), it[1] ] }
+
       refs_ch
-        .cross (PROG_ALIGNER.out.alignmentFile)
+        .cross (alignments)
         .map { it -> [ it[1][0], it[1][1], it[0][1] ] }
         .set { alignment_and_ref }
-      EVAL_ALIGNMENT (alignment_and_ref,align_method, bucket_size, dynamicX)
-      EVAL_ALIGNMENT.out.scores.map{ it -> "${it.baseName};${it.text}" }
+      EVAL_ALIGNMENT (alignment_and_ref)
+      EVAL_ALIGNMENT.out.scores
                     .collectFile(name: "progressive.scores.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
     }
 

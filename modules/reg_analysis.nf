@@ -19,13 +19,18 @@ workflow REG_ANALYSIS {
     REG_ALIGNER (seqs_and_trees, align_method, bucket_size)
 
     if (params.evaluate){
+
+      alignments = REG_ALIGNER.out.alignmentFile.map{ it -> [ it[0].replaceAll("_ref", ""), it[1] ] }
+
       refs_ch
-        .cross (REG_ALIGNER.out.alignmentFile)
+        .cross (alignments)
         .map { it -> [ it[1][0], it[1][1], it[0][1] ] }
         .set { alignment_and_ref }
-      EVAL_ALIGNMENT (alignment_and_ref, align_method, bucket_size, "")
-      EVAL_ALIGNMENT.out.scores.map{ it -> "${it.baseName};${it.text}" }
-                    .collectFile(name: "regressive.scores_${align_method}_${params.buckets}.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
+
+
+      EVAL_ALIGNMENT (alignment_and_ref)
+      EVAL_ALIGNMENT.out.scores
+                    .collectFile(name: "regressive.scores.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
     }
 
     emit:

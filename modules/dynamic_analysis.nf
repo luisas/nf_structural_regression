@@ -21,22 +21,6 @@ workflow DYNAMIC_ANALYSIS {
 
   main:
 
-    /*
-    *  Generate configuration for running dynamic t-coffee
-    */
-    GENERATE_DYNAMIC_CONFIG(dynamicMasterAln, dynamicSlaveAln, bucket_size, dynamicX)
-
-    /*
-    *  Align
-    */
-
-    // Test all configurations
-    seqs_and_trees
-        .combine(GENERATE_DYNAMIC_CONFIG.out.config)
-        .set { seqs_and_trees_configs }
-
-
-
     if (params.predict){
 
       ids_done = structures.ifEmpty(">--")
@@ -44,15 +28,15 @@ workflow DYNAMIC_ANALYSIS {
                            .collect()
 
       // Extract sequences for which structures are needed
-      EXTRACT_SEQUENCES(seqs_and_trees_configs)
+      EXTRACT_SEQUENCES(seqs_and_trees, bucket_size)
 
       // 0. Check if structures have been produced
-      CHECK_CACHE(EXTRACT_SEQUENCES.out.extractedSequences,ids_done)
+      CHECK_CACHE(EXTRACT_SEQUENCES.out.extractedSequences, ids_done)
 
       // 1A. PREDICT NEW STRUCTURES
       // Only runs if some sequences do not have a structure predicted
       // Split Fasta and run colabfold on chunks
-      RUN_COLABFOLD(CHECK_CACHE.out.seqToPredict.filter{ it[3].size()>0 }.splitFasta( by: 2, file: true ))
+      RUN_COLABFOLD(CHECK_CACHE.out.seqToPredict.filter{ it[3].size()>0 }.splitFasta( by: 50, file: true ))
       ADD_PDB_HEADERS(RUN_COLABFOLD.out.af2_pdb)
 
 
@@ -77,12 +61,14 @@ workflow DYNAMIC_ANALYSIS {
                                       .map{ it -> [it[0], it[1], it[3]] }
                                       .groupTuple(by: [0,1])
 
+
+
       seqs_and_trees
         .combine(all_structures, by: [0,1])
-        .combine(EXTRACT_SEQUENCES.out.templates.map{ it -> [it[0], it[1], it[3], it[2], it[4], it[5], it[6], it[7]] }, by: [0,1])
+        .combine(EXTRACT_SEQUENCES.out.templates.map{ it -> [it[0], it[1], it[3], it[2]] }, by: [0,1])
         .set{ seqs_and_trees_and_structures }
 
-    seqs_and_trees_and_structures.view()
+    //seqs_and_trees_and_structures.view()
 
     }else{
        // TO BE TESTED!!
@@ -92,13 +78,23 @@ workflow DYNAMIC_ANALYSIS {
       structures.view()
       seqs_and_trees
         .cross(all_structures)
-        .combine(EXTRACT_SEQUENCES.out.templates.map{ it -> [it[0], it[1], it[3], it[2], it[4], it[5], it[6], it[7]] }, by: [0,1])
+        .combine(EXTRACT_SEQUENCES.out.templates.map{ it -> [it[0], it[1], it[3]] }, by: [0,1])
         .set{ seqs_and_trees_and_structures }
 
       seqs_and_trees_and_structures.view()
     }
 
-    DYNAMIC_ALIGNER (seqs_and_trees_and_structures)
+
+    /*
+    *  Generate configuration for running dynamic t-coffee
+    */
+    GENERATE_DYNAMIC_CONFIG(dynamicMasterAln, dynamicSlaveAln)
+
+    seqs_and_trees_and_structures
+    .combine(GENERATE_DYNAMIC_CONFIG.out.config)
+    .set { seqs_and_trees_and_structures_configs }
+
+    DYNAMIC_ALIGNER (seqs_and_trees_and_structures_configs, dynamicX)
 
 
     /*
@@ -109,7 +105,6 @@ workflow DYNAMIC_ANALYSIS {
         .cross (DYNAMIC_ALIGNER.out.alignmentFile)
         .map { it -> [ it[1][0], it[1][1], it[0][1] ] }
         .set { alignment_and_ref }
-
       EVAL_ALIGNMENT(alignment_and_ref)
       EVAL_ALIGNMENT.out.scores.collect().view()
       EVAL_ALIGNMENT.out.scores

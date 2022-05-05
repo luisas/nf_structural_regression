@@ -16,8 +16,8 @@ t_coffee -reg -reg_method dynamic_msa \
           -output fasta_aln \
           -thread ${task.cpus} \
           -reg_homoplasy \
-          -outfile ${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${bucket_size}.${slaveAln}.${tree_method}.aln
+          -outfile ${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}.aln
 
 
 
-mv *.homoplasy ${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${bucket_size}.${slaveAln}.${tree_method}.homoplasy
+mv *.homoplasy ${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}.homoplasy

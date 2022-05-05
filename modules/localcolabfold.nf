@@ -1,10 +1,7 @@
-#!/usr/bin/env nextflow
-nextflow.enable.dsl=2
-
 process RUN_COLABFOLD {
 	tag "${fam_name}"
 	publishDir "${params.af2_db_path}/colabfold/${fam_name}", mode: 'copy', overwrite: true
-	//storeDir "${params.af2_db_path}/colabfold/${fam_name}"
+
 
 	input:
 	tuple val(fam_name),val(tree_method),val(dynamicMasterSize), path(fasta)

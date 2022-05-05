@@ -36,8 +36,8 @@ process DYNAMIC_ALIGNER {
     label 'process_big'
 
     input:
-    tuple val(id), val(tree_method), path(seqs), path(guide_tree), path (structures), path (extractedSequences),val(bucket_size), val(masterAln), val(slaveAln), val(dynamicX), path(dynamicConfig)
-
+    tuple val(id), val(tree_method), path(seqs), path(guide_tree), path (structures), path (extractedSequences),val(bucket_size), val(masterAln), val(slaveAln), path(dynamicConfig)
+    each dynamicX
 
     output:
     tuple val (id), path("*.aln"), emit: alignmentFile
@@ -54,14 +54,14 @@ process PROG_ALIGNER {
     container 'luisas/structural_regression:7'
     tag "$align_method - $tree_method on $id"
     storeDir "${params.outdir}/alignments/${id}/${id}.progressive.${align_method}.${tree_method}"
-    label 'process_medium'
+    label 'process_small'
 
     input:
     tuple val(id), val(tree_method), path(seqs), path(guide_tree)
     each align_method
 
     output:
-    tuple val (id), path ("${id}.progressive.*.aln"), emit: alignmentFile
+    tuple val (id), path ("${id}.progressive.${align_method}.${tree_method}.aln"), emit: alignmentFile
     path ".command.trace", emit: metricFile
 
     script:

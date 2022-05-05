@@ -38,35 +38,47 @@ nextflow.enable.dsl = 2
  * defaults parameter definitions
  */
 
-testfamsmall="seatoxin,scorptoxin,rnasemam,hip,toxin,ghf11,TNF,sti"
-//testfam="seatoxin,cryst"
+
+
+
+//testfam="blm,egf,gpdh,lyase_1,int,subt,ldh,HLH,LIM,cyclo,proteasome,icd,msb,OTCace,HMG_box"
+//testfam="seatoxin,scorptoxin"
+
 testfam="seatoxin,scorptoxin"
+//testfam="rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL,aadh,ace,ACPS,ARM,cat3,ccH,CH"
+//testfam="kringle,cryst,DEATH,cah,mmp"
+//testfam="Acetyltransf,sdr,rvp,zf-CCHH,rrm,aat,adh,p450,rhv,blmb,PDZ,Rhodanese"
 testfammedium = "kringle,cryst,DEATH,cah,mmp,rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL"
-testfamlerge= "kringle,cryst,DEATH,cah,mmp,rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL"
+testsmallhomfam="blm,egf,gpdh,lyase_1,int,subt,ldh,HLH,LIM,cyclo,proteasome,icd,msb,OTCace,HMG_box,flav,uce,peroxidase,sodfe,ghf1,cys,ace,glob,tim,hr,hormone_rec,hpr,oxidored_q6,asp,cytb,serpin,annexin,aadh,phc,ghf5,Ald_Xan_dh_2,mofe,Sulfotransfer,kunitz,GEL,tms,DMRL_synthase,KAS,sodcu,tgfb,ghf10,rub,mmp,cah,DEATH,cryst,kringle,az,il8,ltn,phoslip,slectin,trfl,ins,ChtBD,ghf22,ricin,profilin,Stap_Strp_toxin,sti,TNF,ghf11,toxin,bowman,rnasemam,cyt3,scorptoxin,hip,seatoxin,test"
+testfammedium2="rrm,aat,adh,p450,rhv,blmb,PDZ,Rhodanese,hla,aldosered,ghf13,hom,biotin_lipoyl,tRNA-synt_2b,myb_DNA-binding,gluts"
+testlarge2="Acetyltransf,sdr,rvp,zf-CCHH"
+
+testfamlarge= "aadh,ace,ACPS,ARM,cat3,ccH,CH"
+testfamxlarge= "aabp,actin,adk,C2,cox,COX2,CPS"
+testfamhuge= "AAA,ABC_tran,blmb,fn3,rep,sdr"
 
 params.dataset_dir="/users/cn/lsantus/"
 params.dataset = "homfam"
-params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/{${testfam}}.fa"
-params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/{${testfam}}.ref"
+fasta_dirs="combinedSeqs,refs"
+params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/{$fasta_dirs}/*.fa"
+params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/*.ref"
 params.af2_db_path = "${params.dataset_dir}/data/structural_regression/af2_structures"
 
 params.align_methods = "FAMSA"
 params.tree_methods = "FAMSA-medoid"
 
-params.buckets = "50"
+params.buckets = "50,1000"
 //  ## DYNAMIC parameters
-params.dynamicX = "1,2,3"
-params.dynamicMasterAln="famsa_msa,tcoffee_msa"
+params.dynamicX = "1"
+params.dynamicMasterAln="famsa_msa"
 params.dynamicSlaveAln="famsa_msa"
 
 params.predict = true
-params.cpu_flag=""
 
-params.max_cpus=16
 
-params.dynamic_align=true
-params.regressive_align=false
-params.progressive_align=false
+params.dynamic_align=false
+params.regressive_align=true
+params.progressive_align=true
 
 params.evaluate=true
 
@@ -110,7 +122,10 @@ include { PROG_ANALYSIS } from './modules/prog_analysis'        params(params)
 // Channels
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item] }
 
-structures_ch = Channel.fromPath("${params.af2_db_path}/colabfold_header/{${testfam}}/**/*.pdb")
+seqs_ch.view()
+
+
+structures_ch = Channel.fromPath("${params.af2_db_path}/colabfold_header/*/**/*.pdb")
                        .map { item -> [ item.getParent().getParent().baseName, item.baseName, item] }
 
 if ( params.refs ) {

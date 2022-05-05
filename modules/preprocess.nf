@@ -11,33 +11,33 @@ process GENERATE_DYNAMIC_CONFIG {
     input:
     each masterAln
     each slaveAln
-    each bucket_size
-    each dynamicX
 
     output:
-    tuple val(masterAln), val(slaveAln), val(bucket_size), val(dynamicX), path("${masterAln}_${slaveAln}_${bucket_size}_${dynamicX}.config"), emit: config
+    tuple val(masterAln), val(slaveAln), path("${masterAln}_${slaveAln}.config"), emit: config
+
 
     script:
     """
-    echo '${masterAln} 1' > ${masterAln}_${slaveAln}_${bucket_size}_${dynamicX}.config
-    echo '${slaveAln} 1' >> ${masterAln}_${slaveAln}_${bucket_size}_${dynamicX}.config
+    echo '${masterAln} 1' > ${masterAln}_${slaveAln}.config
+    echo '${slaveAln} 1' >> ${masterAln}_${slaveAln}.config
     """
 }
 
 
 process EXTRACT_SEQUENCES {
   container 'luisas/structural_regression:7'
-  tag "$id; ${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}"
-  storeDir "${params.outdir}/seqs_extracted/${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}"
+  tag "$id; ${id}.dynamic.${bucket_size}.${tree_method}"
+  storeDir "${params.outdir}/seqs_extracted/${id}.dynamic.${bucket_size}.${tree_method}"
   label "process_low"
 
 
   input:
-  tuple val(id), val(tree_method), path(seqs), path(guide_tree), val(masterAln), val(slaveAln), val(bucket_size), val(dynamicX), path(dynamicConfig)
+  tuple val(id), val(tree_method), path(seqs), path(guide_tree)
+  each bucket_size
 
   output:
-  tuple val (id), val(tree_method),val(bucket_size), path("*.fasta"), emit: extractedSequences
-  tuple val (id), val(tree_method),val(bucket_size), path("template_list.txt"), val(masterAln), val(slaveAln), val(dynamicX),path(dynamicConfig),emit: templates
+  tuple val (id), val(tree_method),val(bucket_size), path("${id}.${bucket_size}.${tree_method}.PARENTS.fasta"), emit: extractedSequences
+  tuple val (id), val(tree_method),val(bucket_size), path("${id}.${bucket_size}.${tree_method}.templates.txt"), emit: templates
   path ".command.trace", emit: metricFile
 
   script:
