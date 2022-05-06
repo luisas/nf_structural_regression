@@ -44,7 +44,7 @@ nextflow.enable.dsl = 2
 //testfam="blm,egf,gpdh,lyase_1,int,subt,ldh,HLH,LIM,cyclo,proteasome,icd,msb,OTCace,HMG_box"
 //testfam="seatoxin,scorptoxin"
 
-testfam="seatoxin,scorptoxin"
+testfam="aadh,aat,Acetyltransf,adh,az,blm,blmb,bowman,cah,ChtBD,cryst,cyclo,cytb,DEATH,DMRL_synthase,egf,GEL,ghf10,ghf11,glob,gluts,gpdh,hip,HLH,HMG_box,hormone_rec,hpr,hr,icd,il8,ins,int,KAS,kringle,ldh,LIM,ltn,lyase_1,mmp,msb,myb_DNA-binding,OTCace,PDZ,phc,profilin,proteasome,Rhodanese,rhv,ricin,rnasemam,rrm,rub,scorptoxin,sdr,seatoxin,seatoxin_old,sodcu,sodfe,Stap_Strp_toxin,sti,test,tgfb,tms,TNF,toxin,uce,zf-CCHH"
 //testfam="rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL,aadh,ace,ACPS,ARM,cat3,ccH,CH"
 //testfam="kringle,cryst,DEATH,cah,mmp"
 //testfam="Acetyltransf,sdr,rvp,zf-CCHH,rrm,aat,adh,p450,rhv,blmb,PDZ,Rhodanese"
@@ -60,23 +60,23 @@ testfamhuge= "AAA,ABC_tran,blmb,fn3,rep,sdr"
 params.dataset_dir="/users/cn/lsantus/"
 params.dataset = "homfam"
 fasta_dirs="combinedSeqs,refs"
-params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/{$fasta_dirs}/*.fa"
-params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/*.ref"
+params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/{$fasta_dirs}/{$testfam}.fa"
+params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/{$testfam}.ref"
 params.af2_db_path = "${params.dataset_dir}/data/structural_regression/af2_structures"
 
 params.align_methods = "FAMSA"
 params.tree_methods = "FAMSA-medoid"
 
-params.buckets = "50,1000"
+params.buckets = "50"
 //  ## DYNAMIC parameters
-params.dynamicX = "1"
-params.dynamicMasterAln="famsa_msa"
+params.dynamicX = "1,1000,100000000"
+params.dynamicMasterAln="famsa_msa,tcoffee_msa"
 params.dynamicSlaveAln="famsa_msa"
 
 params.predict = true
 
 
-params.dynamic_align=false
+params.dynamic_align=true
 params.regressive_align=true
 params.progressive_align=true
 
