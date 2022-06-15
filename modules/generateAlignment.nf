@@ -40,7 +40,7 @@ process DYNAMIC_ALIGNER {
     each dynamicX
 
     output:
-    tuple val (id), path("*.aln"), emit: alignmentFile
+    tuple val (id), path("${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}.aln"), emit: alignmentFile
     path "*.homoplasy", emit: homoplasyFile
     path ".command.trace", emit: metricFile
 

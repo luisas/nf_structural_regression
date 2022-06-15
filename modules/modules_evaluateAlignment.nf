@@ -8,12 +8,6 @@ process EVAL_ALIGNMENT {
     label "process_low"
 
     input:
-    // val align_type
-    // each masterAln
-    // each bucket_size
-    // each dynamicX
-    // each slaveAln
-    // each tree_method
     tuple  val(id), file (test_alignment), file (ref_alignment)
 
     output:
@@ -58,32 +52,28 @@ process EVAL_ALIGNMENT {
 process EASEL_INFO {
     container 'edgano/hmmer:latest'
     tag "EASEL_INFO on $id"
-    publishDir "${params.outdir}/evaluation/easel", mode: 'copy', overwrite: true
+    storeDir "${params.outdir}/evaluation/easel"
 
     input:
-    val align_type
-    tuple  val (id), file (test_alignment)
-    val align_method
-    val tree_method
-    val bucket_size
+    tuple  val(id), file (test_alignment), file (ref_alignment)
+
 
     output:
-    tuple val(id), \
-    val(align_type), \
-    val(bucket_size), \
-    val(align_method), \
-    val(tree_method), \
-    path("*.easel_INFO"), \
-    path("*.avgLen"), \
-    path("*.avgId"), emit: easelFiles
+    tuple path("${test_alignment.baseName}.easel_INFO"), \
+    path("${test_alignment.baseName}.avgLen"), \
+    path("${test_alignment.baseName}.avgId"), emit: easelFiles
 
      shell:
      '''
-     esl-alistat !{test_alignment} > !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_INFO
-     awk -F : '{ if (\$1=="Average length") printf "%s", \$2}' !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_INFO | sed 's/ //g' > !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.avgLen
-     awk -F : '{ if (\$1=="Average identity") printf "%s", substr(\$2, 1, length(\$2)-1)}' !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.easel_INFO | sed 's/ //g' > !{id}.!{align_type}.!{bucket_size}.!{align_method}.with.!{tree_method}.tree.avgId
+     esl-alistat !{test_alignment} > !{test_alignment.baseName}.easel_INFO
+     awk -F : '{ if (\$1=="Average length") printf "%s", \$2}' !{test_alignment.baseName}.easel_INFO | sed 's/ //g' > !{test_alignment.baseName}.avgLen
+     awk -F : '{ if (\$1=="Average identity") printf "%s", substr(\$2, 1, length(\$2)-1)}' !{test_alignment.baseName}.easel_INFO | sed 's/ //g' > !{test_alignment.baseName}.avgId
      '''
 }
+
+
+
+
 
 
 process GAPS_PROGRESSIVE {
@@ -110,32 +100,32 @@ process GAPS_PROGRESSIVE {
 
     script:
     """
-#!/usr/bin/env python
-from Bio import SeqIO
-from decimal import *
-import os
-gap = '-'
-globalGap = 0
-avgGap = 0
-auxGap = 0
-totGapName= "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.totGap"
-numbSeqName= "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.numSeq"
-alnLenName= "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.alnLen"
-totGapFile= open(totGapName,"w+")
-numSeqFile= open(numbSeqName,"w+")
-alnLenFile= open(alnLenName,"w+")
-record = list(SeqIO.parse("${test_alignment}", "fasta"))
-for sequence in record:
-    ## print(sequence.seq)
-    auxGap = sequence.seq.count(gap)
-    globalGap += auxGap
-avgGap = Decimal(globalGap) / Decimal(len(record))
-print "NumSeq: ",len(record)," GlobalGap: ",globalGap," AVG_Gap:",round(avgGap,3)
-totGapFile.write(str(globalGap))
-alnLenFile.write(str(len(record[0])))
-numSeqFile.write(str(len(record)))
-totGapFile.close()
-alnLenFile.close()
-numSeqFile.close()
+    #!/usr/bin/env python
+    from Bio import SeqIO
+    from decimal import *
+    import os
+    gap = '-'
+    globalGap = 0
+    avgGap = 0
+    auxGap = 0
+    totGapName= "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.totGap"
+    numbSeqName= "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.numSeq"
+    alnLenName= "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.alnLen"
+    totGapFile= open(totGapName,"w+")
+    numSeqFile= open(numbSeqName,"w+")
+    alnLenFile= open(alnLenName,"w+")
+    record = list(SeqIO.parse("${test_alignment}", "fasta"))
+    for sequence in record:
+        ## print(sequence.seq)
+        auxGap = sequence.seq.count(gap)
+        globalGap += auxGap
+    avgGap = Decimal(globalGap) / Decimal(len(record))
+    print "NumSeq: ",len(record)," GlobalGap: ",globalGap," AVG_Gap:",round(avgGap,3)
+    totGapFile.write(str(globalGap))
+    alnLenFile.write(str(len(record[0])))
+    numSeqFile.write(str(len(record)))
+    totGapFile.close()
+    alnLenFile.close()
+    numSeqFile.close()
     """
 }

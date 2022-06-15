@@ -10,6 +10,7 @@ from os import listdir
 from os.path import isfile, join
 import matplotlib.ticker as ticker
 import sys
+import matplotlib as mpl
 
 
 ### parse trace files
@@ -95,3 +96,63 @@ def get_evaluation_all(my_dir):
 
 def cumavg(x): 
     return(x.cumsum()/list(range(len(x)+1)[1:]))
+
+def cumsum(x): 
+    return(list(x).cumsum())
+def cum_var(x):
+    ind_na = x.notna()
+    nn = ind_na.cumsum()
+    x[x.isna()] = 0
+    cumsum(x^2) / (nn-1) - (cumsum(x))^2/(nn-1)/nn
+
+
+def plot_scatter_perc(df1,df2,xlabel,ylabel,
+                      palette = sns.dark_palette("#3399FF", reverse = True, as_cmap=True),
+                      log = True, 
+                      title = "regressive on homfam"): 
+    sns.set_context("talk")
+    f, ax = plt.subplots(figsize=(8, 6.5))
+    
+    # Prep df 
+    df = df1.merge(df2, on = ["family","n_sequences"])
+    if(log == True):
+        df["n_sequences"] = np.log10( df["n_sequences"] )  
+    
+    hue = df["n_sequences"]
+    
+    # colorbar 
+    norm = mpl.colors.Normalize( vmin=hue.min(), vmax=hue.max())
+    sm = plt.cm.ScalarMappable(cmap=palette, norm=norm)
+    sm.set_array([])
+
+    # Plot 
+    ax = sns.scatterplot(data = df, x = "tc_x",
+                    y = "tc_y",
+                    hue = "n_sequences",
+                    s = 120,
+                    palette = palette)
+    
+
+    # % above the line
+    perc_y_better_than_x = (len(list(filter(lambda ele: ele == True, list(df.tc_x <= df.tc_y)))) / len(list(df.tc_x >= df.tc_y))) * 100
+    ax.get_legend().remove()
+    
+    # Color bar 
+    cbar =ax.figure.colorbar(sm, ticks=np.log10([1000,10000,80_000]), format=mpl.ticker.ScalarFormatter())
+    cbar.ax.set_yticklabels(["1K", "10K", "80K"]) 
+    cbar.ax.set_ylabel('# of sequences  (log10 scale)', rotation=270, labelpad = 20, fontsize = "small")
+    # Diagonal line
+    ax.axline((1, 1), slope=1, ls="--", c=".2", lw = 0.8)
+    
+    # Axis limits
+    plt.xlim([0, 100])
+    plt.ylim([0, 100])
+
+    
+    # Axis labels
+    ax.set(xlabel=xlabel,
+           ylabel=ylabel,
+           title = title + "\n (n = "+str(len(df.tc_x))+") \n\n % y >= x  "+str(round(perc_y_better_than_x,1))+" \n")
+    
+
+

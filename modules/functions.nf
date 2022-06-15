@@ -12,3 +12,24 @@ def set_templates_path () {
     }
     return path_templates
 }
+
+
+def split_if_contains(s,sep, index ){
+
+  if(s.contains(sep)){
+    return s.split(sep)[index]
+  }else{
+    return s
+  }
+
+}
+
+
+def static String remove_suffix( String self ) {
+    if(self.contains("_")){
+      return self.split("_")[0]
+    }else{
+      return self
+    }
+
+}

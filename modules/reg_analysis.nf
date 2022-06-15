@@ -20,17 +20,16 @@ workflow REG_ANALYSIS {
 
     if (params.evaluate){
 
-      alignments = REG_ALIGNER.out.alignmentFile.map{ it -> [ it[0].replaceAll("_ref", ""), it[1] ] }
+      alignments = REG_ALIGNER.out.alignmentFile.map{ it -> [ it[0].replaceAll("-ref", ""), it[1] ] }
 
       refs_ch
         .cross (alignments)
         .map { it -> [ it[1][0], it[1][1], it[0][1] ] }
         .set { alignment_and_ref }
 
-
       EVAL_ALIGNMENT (alignment_and_ref)
-      EVAL_ALIGNMENT.out.scores
-                    .collectFile(name: "regressive.scores.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
+      EASEL_INFO (alignment_and_ref)
+
     }
 
     emit:

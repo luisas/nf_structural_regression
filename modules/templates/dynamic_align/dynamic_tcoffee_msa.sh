@@ -1,10 +1,12 @@
 export VERBOSE_4_DYNAMIC=1
 export method_4_CLTCOFFEE=TMalign_pair
 export template_file_4_CLTCOFFEE="template_list.txt"
+export QUIET_ENV=1
 # -------- Create template file
 # -------- Only extract parent sequences for the template!
 # Extract parent sequences
 #parent_sequences=`grep ">" ${extractedSequences} | sed 's.>..g'`
+mv *.templates.txt template_list.txt
 
 # -------- Run alignment
 t_coffee -reg -reg_method dynamic_msa \

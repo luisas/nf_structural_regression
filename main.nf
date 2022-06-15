@@ -40,45 +40,49 @@ nextflow.enable.dsl = 2
 
 
 
+include { split_if_contains } from './modules/functions.nf'
 
-//testfam="blm,egf,gpdh,lyase_1,int,subt,ldh,HLH,LIM,cyclo,proteasome,icd,msb,OTCace,HMG_box"
+//testfam="aadh,aat,Acetyltransf,adh,az,blm,blmb,bowman,cah,ChtBD,cryst,cyclo,cytb,DEATH,DMRL_synthase,egf,GEL,ghf10,ghf11,glob,gluts,gpdh,hip,HLH,HMG_box,hormone_rec,hpr,hr,icd,il8,ins,int,KAS,kringle,ldh,LIM,ltn,lyase_1,mmp,msb,myb_DNA-binding,OTCace,PDZ,phc,profilin,proteasome,Rhodanese,rhv,ricin,rnasemam,rrm,rub,scorptoxin,sdr,seatoxin,seatoxin_old,sodcu,sodfe,Stap_Strp_toxin,sti,test,tgfb,tms,TNF,toxin,uce,zf-CCHH"
 //testfam="seatoxin,scorptoxin"
-
-testfam="aadh,aat,Acetyltransf,adh,az,blm,blmb,bowman,cah,ChtBD,cryst,cyclo,cytb,DEATH,DMRL_synthase,egf,GEL,ghf10,ghf11,glob,gluts,gpdh,hip,HLH,HMG_box,hormone_rec,hpr,hr,icd,il8,ins,int,KAS,kringle,ldh,LIM,ltn,lyase_1,mmp,msb,myb_DNA-binding,OTCace,PDZ,phc,profilin,proteasome,Rhodanese,rhv,ricin,rnasemam,rrm,rub,scorptoxin,sdr,seatoxin,seatoxin_old,sodcu,sodfe,Stap_Strp_toxin,sti,test,tgfb,tms,TNF,toxin,uce,zf-CCHH"
+//testfam="aadh,aat"
 //testfam="rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL,aadh,ace,ACPS,ARM,cat3,ccH,CH"
 //testfam="kringle,cryst,DEATH,cah,mmp"
-//testfam="Acetyltransf,sdr,rvp,zf-CCHH,rrm,aat,adh,p450,rhv,blmb,PDZ,Rhodanese"
-testfammedium = "kringle,cryst,DEATH,cah,mmp,rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL"
-testsmallhomfam="blm,egf,gpdh,lyase_1,int,subt,ldh,HLH,LIM,cyclo,proteasome,icd,msb,OTCace,HMG_box,flav,uce,peroxidase,sodfe,ghf1,cys,ace,glob,tim,hr,hormone_rec,hpr,oxidored_q6,asp,cytb,serpin,annexin,aadh,phc,ghf5,Ald_Xan_dh_2,mofe,Sulfotransfer,kunitz,GEL,tms,DMRL_synthase,KAS,sodcu,tgfb,ghf10,rub,mmp,cah,DEATH,cryst,kringle,az,il8,ltn,phoslip,slectin,trfl,ins,ChtBD,ghf22,ricin,profilin,Stap_Strp_toxin,sti,TNF,ghf11,toxin,bowman,rnasemam,cyt3,scorptoxin,hip,seatoxin,test"
-testfammedium2="rrm,aat,adh,p450,rhv,blmb,PDZ,Rhodanese,hla,aldosered,ghf13,hom,biotin_lipoyl,tRNA-synt_2b,myb_DNA-binding,gluts"
-testlarge2="Acetyltransf,sdr,rvp,zf-CCHH"
-
-testfamlarge= "aadh,ace,ACPS,ARM,cat3,ccH,CH"
-testfamxlarge= "aabp,actin,adk,C2,cox,COX2,CPS"
-testfamhuge= "AAA,ABC_tran,blmb,fn3,rep,sdr"
+//testfam="aadh,seatoxin"
+//testfam = "kringle,cryst,DEATH,cah,mmp,rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL"
+//testsmallhomfam="blm,egf,gpdh,lyase_1,int,subt,ldh,HLH,LIM,cyclo,proteasome,icd,msb,OTCace,HMG_box,flav,uce,peroxidase,sodfe,ghf1,cys,ace,glob,tim,hr,hormone_rec,hpr,oxidored_q6,asp,cytb,serpin,annexin,aadh,phc,ghf5,Ald_Xan_dh_2,mofe,Sulfotransfer,kunitz,GEL,tms,DMRL_synthase,KAS,sodcu,tgfb,ghf10,rub,mmp,cah,DEATH,cryst,kringle,az,il8,ltn,phoslip,slectin,trfl,ins,ChtBD,ghf22,ricin,profilin,Stap_Strp_toxin,sti,TNF,ghf11,toxin,bowman,rnasemam,cyt3,scorptoxin,hip,seatoxin,test"
+//testfammedium2="rrm,aat,adh,p450,rhv,blmb,PDZ,Rhodanese,hla,aldosered,ghf13,hom,biotin_lipoyl,tRNA-synt_2b,myb_DNA-binding,gluts"
+//testfam="rub,seatoxin,ace"
+testfam="rvp,sdr"
+//testfam="rvp,blmb"
+//testfamlarge= "aadh,ace,ACPS,ARM,cat3,ccH,CH"
+//testfamxlarge= "aabp,actin,adk,C2,cox,COX2,CPS"
+//testfamhuge= "AAA,ABC_tran,blmb,fn3,rep,sdr"
 
 params.dataset_dir="/users/cn/lsantus/"
 params.dataset = "homfam"
 fasta_dirs="combinedSeqs,refs"
-params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/{$fasta_dirs}/{$testfam}.fa"
-params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/{$testfam}.ref"
+params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/{$testfam}*.fa"
+params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/{$testfam}*.ref"
 params.af2_db_path = "${params.dataset_dir}/data/structural_regression/af2_structures"
 
 params.align_methods = "FAMSA"
 params.tree_methods = "FAMSA-medoid"
 
-params.buckets = "50"
+params.buckets = "50,100"
 //  ## DYNAMIC parameters
-params.dynamicX = "1,1000,100000000"
-params.dynamicMasterAln="famsa_msa,tcoffee_msa"
+params.dynamicX = "100000000"
+params.dynamicMasterAln="tcoffee_msa"
+//params.dynamicX = "1"
+//params.dynamicMasterAln="famsa_msa"
 params.dynamicSlaveAln="famsa_msa"
 
 params.predict = true
-
+params.n_af2 = 50
 
 params.dynamic_align=true
-params.regressive_align=true
-params.progressive_align=true
+params.regressive_align=false
+params.progressive_align=false
+
 
 params.evaluate=true
 
@@ -122,11 +126,9 @@ include { PROG_ANALYSIS } from './modules/prog_analysis'        params(params)
 // Channels
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item] }
 
-seqs_ch.view()
 
-
-structures_ch = Channel.fromPath("${params.af2_db_path}/colabfold_header/*/**/*.pdb")
-                       .map { item -> [ item.getParent().getParent().baseName, item.baseName, item] }
+structures_ch = Channel.fromPath("${params.af2_db_path}/colabfold/*/*_alphafold.pdb")
+                       .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName.replace("_alphafold", ""), item] }
 
 if ( params.refs ) {
   refs_ch = Channel.fromPath( params.refs ).map { item -> [ item.baseName, item] }
@@ -150,7 +152,7 @@ workflow pipeline {
     TREE_GENERATION (seqs_ch, tree_method)
     seqs_ch
         .cross(TREE_GENERATION.out.trees)
-        .map { it -> [ it[1][0], it[1][1], it[0][1], it[1][2] ] }
+        .map { it -> [ it[1][0], it[1][1], it[0][1], it[1][2] ] }.view()
         .set { seqs_and_trees }
 
     if (params.regressive_align){
