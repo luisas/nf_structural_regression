@@ -2,6 +2,8 @@ export VERBOSE_4_DYNAMIC=1
 export method_4_CLTCOFFEE=TMalign_pair
 export template_file_4_CLTCOFFEE="template_list.txt"
 export QUIET_ENV=1
+export LOG_4_DYNAMIC=1
+
 # -------- Create template file
 # -------- Only extract parent sequences for the template!
 # Extract parent sequences
@@ -23,3 +25,4 @@ t_coffee -reg -reg_method dynamic_msa \
 
 
 mv *.homoplasy ${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}.homoplasy
+mv buckets.log ${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}.bucket.log

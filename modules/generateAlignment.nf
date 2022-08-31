@@ -6,7 +6,7 @@ path_templates = set_templates_path()
 
 
 process REG_ALIGNER {
-    container 'luisas/structural_regression:7'
+    container 'edgano/tcoffee:pdb'
     tag "$align_method - $tree_method - $bucket_size on $id"
     storeDir "${params.outdir}/alignments/$id/${id}.regressive.${bucket_size}.${align_method}.${tree_method}"
     label 'process_medium'
@@ -30,7 +30,7 @@ process REG_ALIGNER {
 
 
 process DYNAMIC_ALIGNER {
-    container 'luisas/structural_regression:7'
+    container 'luisas/structural_regression:16'
     tag "${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}"
     storeDir "${params.outdir}/alignments/$id/${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}"
     label 'process_medium'
@@ -43,6 +43,7 @@ process DYNAMIC_ALIGNER {
     tuple val (id), path("${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}.aln"), emit: alignmentFile
     path "*.homoplasy", emit: homoplasyFile
     path ".command.trace", emit: metricFile
+    path "${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}.bucket.log", emit: bucketLogFile
 
     script:
     template "${path_templates}/dynamic_align/dynamic_${masterAln}.sh"

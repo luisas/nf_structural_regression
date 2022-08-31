@@ -18,8 +18,10 @@ process GENERATE_DYNAMIC_CONFIG {
 
     script:
     """
-    echo '${masterAln} 1' > ${masterAln}_${slaveAln}.config
-    echo '${slaveAln} 1' >> ${masterAln}_${slaveAln}.config
+    echo '${masterAln}' > ${masterAln}_${slaveAln}.config
+    echo '${slaveAln}' >> ${masterAln}_${slaveAln}.config
+    sed -i 's/#/\\n/g' ${masterAln}_${slaveAln}.config
+    sed -i 's/:/\\t/g' ${masterAln}_${slaveAln}.config
     """
 }
 

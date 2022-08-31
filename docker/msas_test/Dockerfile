@@ -49,6 +49,29 @@ RUN wget http://prdownloads.sourceforge.net/argtable/argtable2-13.tar.gz && \
     make install && \
     rm /argtable2-13.tar.gz
 
+# install MAFFT
+RUN wget http://mafft.cbrc.jp/alignment/software/mafft-7.397-with-extensions-src.tgz && \
+    tar xfvz mafft-7.397-with-extensions-src.tgz && \
+    cd mafft-7.397-with-extensions/core/ && \
+    sed -i "s/PREFIX = \/usr\/local/PREFIX = \/mafft/g" Makefile && \
+    sed -i "s/BINDIR = \$(PREFIX)\/bin/BINDIR = \/mafft\/bin/g" Makefile && \
+    make clean && \
+    make && \
+    make install && \
+    wget http://mafft.cbrc.jp/alignment/software/newick2mafft.rb && \
+    chmod +x newick2mafft.rb && \
+    export "PATH=$PATH:/mafft/bin" && \
+    export MAFFT_BINARIES="" && \
+    cp /mafft/bin/* /usr/bin/. && \
+    mv /mafft-7.397-with-extensions /mafft && \
+    rm /mafft-7.397-with-extensions-src.tgz
+
+# Install PROBCONS
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    probcons
+
+
 # Install BLAST+
 RUN wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.10.1/ncbi-blast-2.10.1+-x64-linux.tar.gz && \
     tar -xvf ncbi-blast-2.10.1+-x64-linux.tar.gz && \

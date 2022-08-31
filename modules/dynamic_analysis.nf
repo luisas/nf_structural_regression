@@ -26,13 +26,11 @@ workflow DYNAMIC_ANALYSIS {
 
     if (params.predict){
 
-      println("here")
       // Extract sequences for which structures are needed
       EXTRACT_SEQUENCES(seqs_and_trees, bucket_size)
 
       // Add pdb header to available structures
       // The third value is empty because it corresponds to the masterSize. Redesign needed in the future.ifEmpty(">--")
-
       ids_done = structures.ifEmpty(">--")
                            .collectFile() { item -> [ "ids_done.txt", item[1] + '\n' ]}
                            .collect()
@@ -106,7 +104,6 @@ workflow DYNAMIC_ANALYSIS {
     *  Evaluate alignment
     */
     if (params.evaluate){
-
 
       refs_ch
         .cross (DYNAMIC_ALIGNER.out.alignmentFile.map{ it -> [split_if_contains(it[0], "-ref", 0), it[1]]})

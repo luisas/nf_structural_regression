@@ -5,8 +5,6 @@ export LOG_4_DYNAMIC=1
 
 
 
-
-
 t_coffee -reg -reg_method dynamic_msa \
           -seq ${seqs} \
           -reg_tree ${guide_tree} \

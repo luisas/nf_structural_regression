@@ -20,7 +20,7 @@
  */
 
 /*
- * Main XXX pipeline script
+ * Main Structural regression  pipeline script
  *
  * @authors
  * Luisa Santus
@@ -52,29 +52,28 @@ include { split_if_contains } from './modules/functions.nf'
 //testsmallhomfam="blm,egf,gpdh,lyase_1,int,subt,ldh,HLH,LIM,cyclo,proteasome,icd,msb,OTCace,HMG_box,flav,uce,peroxidase,sodfe,ghf1,cys,ace,glob,tim,hr,hormone_rec,hpr,oxidored_q6,asp,cytb,serpin,annexin,aadh,phc,ghf5,Ald_Xan_dh_2,mofe,Sulfotransfer,kunitz,GEL,tms,DMRL_synthase,KAS,sodcu,tgfb,ghf10,rub,mmp,cah,DEATH,cryst,kringle,az,il8,ltn,phoslip,slectin,trfl,ins,ChtBD,ghf22,ricin,profilin,Stap_Strp_toxin,sti,TNF,ghf11,toxin,bowman,rnasemam,cyt3,scorptoxin,hip,seatoxin,test"
 //testfammedium2="rrm,aat,adh,p450,rhv,blmb,PDZ,Rhodanese,hla,aldosered,ghf13,hom,biotin_lipoyl,tRNA-synt_2b,myb_DNA-binding,gluts"
 //testfam="rub,seatoxin,ace"
-testfam="rvp,sdr"
+params.testfam="rnasemam, ghf10, HMG_box, egf, rhv,  biotin_lipoyl, adh"
 //testfam="rvp,blmb"
 //testfamlarge= "aadh,ace,ACPS,ARM,cat3,ccH,CH"
 //testfamxlarge= "aabp,actin,adk,C2,cox,COX2,CPS"
 //testfamhuge= "AAA,ABC_tran,blmb,fn3,rep,sdr"
-
+params.compressAZ = false
 params.dataset_dir="/users/cn/lsantus/"
 params.dataset = "homfam"
 fasta_dirs="combinedSeqs,refs"
-params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/{$testfam}*.fa"
-params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/{$testfam}*.ref"
+params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/{$params.testfam}*.fa"
+params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/{$params.testfam}*.ref"
 params.af2_db_path = "${params.dataset_dir}/data/structural_regression/af2_structures"
 
 params.align_methods = "FAMSA"
 params.tree_methods = "FAMSA-medoid"
 
-params.buckets = "50,100"
+params.buckets = "50"
+
 //  ## DYNAMIC parameters
 params.dynamicX = "100000000"
 params.dynamicMasterAln="tcoffee_msa"
-//params.dynamicX = "1"
-//params.dynamicMasterAln="famsa_msa"
-params.dynamicSlaveAln="famsa_msa"
+params.dynamicSlaveAln="probcons_msa:50-famsa_msa,famsa_msa"
 
 params.predict = true
 params.n_af2 = 50
@@ -82,7 +81,6 @@ params.n_af2 = 50
 params.dynamic_align=true
 params.regressive_align=false
 params.progressive_align=false
-
 
 params.evaluate=true
 
