@@ -41,7 +41,9 @@ workflow DYNAMIC_ANALYSIS {
       // 1A. PREDICT NEW STRUCTURES
       // Only runs if some sequences do not have a structure predicted
       // Split Fasta and run colabfold on chunks
-      RUN_COLABFOLD(CHECK_CACHE.out.seqToPredict.filter{ it[3].size()>0 }.splitFasta( by: params.n_af2, file: true ))
+      RUN_COLABFOLD(CHECK_CACHE.out.seqToPredict.filter{ it[3].size()>0 }.splitFasta( by: params.n_af2, file: true ),
+                    params.model_type,
+                    params.db )
 
 
 
@@ -62,7 +64,7 @@ workflow DYNAMIC_ANALYSIS {
       all_structures = RUN_COLABFOLD.out.af2_pdb.groupTuple(by:[0,1,2])
                                       .map{ it -> [it[0],it[1],it[2],it[3].flatten()]}
                                       .concat(precomputed_structures)
-                                      .map{ it -> [it[0], it[1], it[3].toString().split("/")[-1].split("_alphafold")[0], it[3]] }
+
 
 
       // How it looks like: all structures -->  [fam,tree,sequence_id, sequence_id.pdb]

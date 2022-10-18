@@ -2,7 +2,7 @@ export blast_server_4_CLTCOFFEE=LOCAL
 export VERBOSE_4_DYNAMIC=1
 export DUMP_ALN_BUCKETS=1
 export LOG_4_DYNAMIC=1
-
+unset MAFFT_BINARIES
 
 
 t_coffee -reg -reg_method dynamic_msa \

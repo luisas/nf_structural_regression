@@ -5,7 +5,7 @@ include { set_templates_path } from './functions.nf'
 path_templates = set_templates_path()
 
 process TREE_GENERATION {
-    container 'luisas/structural_regression'
+    container 'edgano/tcoffee:pdb'
     tag "$tree_method on $id"
     storeDir "${params.outdir}/trees/${id}/${id}.${tree_method}"
     label "process_medium"

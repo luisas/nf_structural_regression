@@ -52,7 +52,9 @@ include { split_if_contains } from './modules/functions.nf'
 //testsmallhomfam="blm,egf,gpdh,lyase_1,int,subt,ldh,HLH,LIM,cyclo,proteasome,icd,msb,OTCace,HMG_box,flav,uce,peroxidase,sodfe,ghf1,cys,ace,glob,tim,hr,hormone_rec,hpr,oxidored_q6,asp,cytb,serpin,annexin,aadh,phc,ghf5,Ald_Xan_dh_2,mofe,Sulfotransfer,kunitz,GEL,tms,DMRL_synthase,KAS,sodcu,tgfb,ghf10,rub,mmp,cah,DEATH,cryst,kringle,az,il8,ltn,phoslip,slectin,trfl,ins,ChtBD,ghf22,ricin,profilin,Stap_Strp_toxin,sti,TNF,ghf11,toxin,bowman,rnasemam,cyt3,scorptoxin,hip,seatoxin,test"
 //testfammedium2="rrm,aat,adh,p450,rhv,blmb,PDZ,Rhodanese,hla,aldosered,ghf13,hom,biotin_lipoyl,tRNA-synt_2b,myb_DNA-binding,gluts"
 //testfam="rub,seatoxin,ace"
-params.testfam="rnasemam, ghf10, HMG_box, egf, rhv,  biotin_lipoyl, adh"
+//params.testfam="rnasemam, ghf10, HMG_box, egf, rhv,  biotin_lipoyl, adh"
+params.testfam="cryst,egf,cyt3"
+
 //testfam="rvp,blmb"
 //testfamlarge= "aadh,ace,ACPS,ARM,cat3,ccH,CH"
 //testfamxlarge= "aabp,actin,adk,C2,cox,COX2,CPS"
@@ -68,25 +70,32 @@ params.af2_db_path = "${params.dataset_dir}/data/structural_regression/af2_struc
 params.align_methods = "FAMSA"
 params.tree_methods = "FAMSA-medoid"
 
-params.buckets = "50"
+params.buckets = "50,100"
 
 //  ## DYNAMIC parameters
 params.dynamicX = "100000000"
 params.dynamicMasterAln="tcoffee_msa"
-params.dynamicSlaveAln="probcons_msa:50-famsa_msa,famsa_msa"
+params.dynamicSlaveAln="famsa_msa"
 
 params.predict = true
 params.n_af2 = 50
 
-params.dynamic_align=true
+pdb_db = Channel.fromPath("${params.pdb_db_path}")
+
+
+params.dynamic_align=false
 params.regressive_align=false
 params.progressive_align=false
+params.structural_regressive_align=false
 
 params.evaluate=true
 
 
 // output directory
 params.outdir = "$baseDir/results/${params.dataset}"
+params.target_db = "PDB"
+params.dbdir = "${params.dataset_dir}/data/db/"
+target_db = Channel.fromPath( "${params.dbdir}/${params.target_db}",checkIfExists: true ).map { item -> [ item.baseName, item] }
 
 
 log.info """\
@@ -112,6 +121,8 @@ log.info """\
          --##--
          Evaluate                                       : ${params.evaluate}
          Output directory (DIRECTORY)                   : ${params.outdir}
+         --##--
+         Target DB                                      : ${params.dbdir}
          """
          .stripIndent()
 
@@ -120,6 +131,7 @@ include { TREE_GENERATION } from './modules/treeGeneration'   params(params)
 include { DYNAMIC_ANALYSIS } from './modules/dynamic_analysis'    params(params)
 include { REG_ANALYSIS } from './modules/reg_analysis'        params(params)
 include { PROG_ANALYSIS } from './modules/prog_analysis'        params(params)
+include { STRUCTURAL_REG_ANALYSIS } from './modules/structural_reg_analysis'        params(params)
 
 // Channels
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item] }
@@ -150,7 +162,7 @@ workflow pipeline {
     TREE_GENERATION (seqs_ch, tree_method)
     seqs_ch
         .cross(TREE_GENERATION.out.trees)
-        .map { it -> [ it[1][0], it[1][1], it[0][1], it[1][2] ] }.view()
+        .map { it -> [ it[1][0], it[1][1], it[0][1], it[1][2] ] }
         .set { seqs_and_trees }
 
     if (params.regressive_align){
@@ -158,11 +170,16 @@ workflow pipeline {
     }
 
     if (params.progressive_align){
-      PROG_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method)
+      // here the situation about the structures need to be either removed or polished!
+      PROG_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method,structures_ch, target_db)
     }
 
     if (params.dynamic_align){
       DYNAMIC_ANALYSIS(seqs_and_trees, refs_ch, tree_method, bucket_list, dynamicMasterAln, dynamicSlaveAln, dynamicX, structures_ch)
+    }
+
+    if (params.structural_regressive_align){
+      STRUCTURAL_REG_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method, bucket_list, target_db)
     }
 }
 

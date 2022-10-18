@@ -109,7 +109,7 @@ def cum_var(x):
 def plot_scatter_perc(df1,df2,xlabel,ylabel,
                       palette = sns.dark_palette("#3399FF", reverse = True, as_cmap=True),
                       log = True, 
-                      title = "regressive on homfam"): 
+                      title = "regressive on homfam", hue_var = "n_sequences"): 
     sns.set_context("talk")
     f, ax = plt.subplots(figsize=(8, 6.5))
     
@@ -128,7 +128,7 @@ def plot_scatter_perc(df1,df2,xlabel,ylabel,
     # Plot 
     ax = sns.scatterplot(data = df, x = "tc_x",
                     y = "tc_y",
-                    hue = "n_sequences",
+                    hue = hue_var,
                     s = 120,
                     palette = palette)
     

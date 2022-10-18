@@ -2,9 +2,10 @@ process RUN_COLABFOLD {
 	tag "${fam_name}"
 	publishDir "${params.af2_db_path}/colabfold/${fam_name}", mode: 'copy', overwrite: true
 
-
 	input:
 	tuple val(fam_name),val(tree_method),val(dynamicMasterSize), path(fasta)
+	val   model_type
+	path db
 
 	output:
 	path ("*"), emit: all_af2
@@ -18,7 +19,11 @@ process RUN_COLABFOLD {
 	echo "RUNNING TIME" >> colabfold_trace.txt
 	hash=`sha1sum  colabfold_trace.txt |  head -c 40`
 
-	{ time -p colabfold_batch --amber --templates --num-recycle 3 ${fasta} \$PWD  ${params.cpu_flag} 2> std.err ; } 2> time.txt
+	{ time -p colabfold_batch --amber --templates --num-recycle 3 \
+				 --data ${db}/params/${params.model_type} \
+				 --model-type ${model_type} \
+				 ${fasta} \
+				 \$PWD  ${params.cpu_flag} 2> std.err ; } 2> time.txt
 	cat time.txt >> colabfold_trace.txt
 	mv colabfold_trace.txt "\${hash}"_hash_colabfold_trace.txt
 

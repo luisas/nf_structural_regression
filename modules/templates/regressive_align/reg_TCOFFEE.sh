@@ -13,3 +13,5 @@ fi
          -reg_homoplasy \
          \$compressFlag \
          -outfile ${id}.reg_${bucket_size}.${align_method}.with.${tree_method}.tree.aln 2> tcoffee.stderr ; } 2> time.txt
+
+mv buckets.log ${id}.regressive.${bucket_size}.${align_method}.${tree_method}.bucket.log

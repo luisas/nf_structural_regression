@@ -61,6 +61,7 @@ RUN wget http://mafft.cbrc.jp/alignment/software/mafft-7.397-with-extensions-src
     make install && \
     wget http://mafft.cbrc.jp/alignment/software/newick2mafft.rb --no-check-certificate && \
     chmod +x newick2mafft.rb && \
+    cp newick2mafft.rb /usr/bin/ &&\
     export "PATH=$PATH:/mafft/bin" && \
     export MAFFT_BINARIES="" && \
     cp /mafft/bin/* /usr/bin/. && \
