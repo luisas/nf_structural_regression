@@ -49,13 +49,58 @@ process EVAL_ALIGNMENT {
 }
 
 
+process TCS {
+    container 'luisas/structural_regression:20'
+    tag "TCS on $id - ${test_alignment.baseName}"
+    storeDir "${params.outdir}/evaluation/tcs/"
+    label "process_low"
+
+    input:
+    tuple  val(id), file (test_alignment)
+
+    output:
+    path ("${test_alignment.baseName}.tcs"), emit: tcs_score
+
+    script:
+    """
+
+    # Bad hack to circumvent t_coffee bug
+    # Issue described already in: https://github.com/cbcrg/tcoffee/issues/3
+    # Add an A in front of filename if the file begins with A
+    filename=${test_alignment.fileName}
+    first_letter_filename=\${filename:0:1}
+    if [ "\$first_letter_filename" == "A" ]; then input="A"\$filename; else input=\$filename;  fi
+
+    t_coffee -infile \$input -evaluate -output=score_ascii -outfile "${test_alignment.baseName}.tcs"
+
+    """
+}
+
+process SIM {
+    container 'luisas/structural_regression:20'
+    tag "SIM on $id - ${test_alignment.baseName}"
+    storeDir "${params.outdir}/evaluation/sim/"
+    label "process_low"
+
+    input:
+    tuple  val(id), file (test_alignment)
+
+    output:
+    path ("${test_alignment.baseName}.sim"), emit: sim
+
+    script:
+    """
+    t_coffee -other_pg seq_reformat -in ${test_alignment} -output=sim > "${test_alignment.baseName}.sim"
+    """
+}
+
 process EASEL_INFO {
     container 'edgano/hmmer:latest'
     tag "EASEL_INFO on $id"
     storeDir "${params.outdir}/evaluation/easel"
 
     input:
-    tuple  val(id), file (test_alignment), file (ref_alignment)
+    tuple  val(id), file (test_alignment)
 
 
     output:
@@ -70,10 +115,6 @@ process EASEL_INFO {
      awk -F : '{ if (\$1=="Average identity") printf "%s", substr(\$2, 1, length(\$2)-1)}' !{test_alignment.baseName}.easel_INFO | sed 's/ //g' > !{test_alignment.baseName}.avgId
      '''
 }
-
-
-
-
 
 
 process GAPS_PROGRESSIVE {
@@ -128,4 +169,34 @@ process GAPS_PROGRESSIVE {
     alnLenFile.close()
     numSeqFile.close()
     """
+}
+
+
+process TCS_optimize{
+
+  container 'luisas/structural_regression:20'
+  tag "TCS on $id - ${test_alignment.baseName}"
+  storeDir "${params.outdir}/evaluation/tcs_optimization/"
+  label "process_low"
+
+  input:
+  tuple  val(id), file (test_alignment)
+
+  output:
+  path ("${test_alignment.baseName}.tcs"), emit: tcs_score
+
+  script:
+  """
+
+  # Bad hack to circumvent t_coffee bug
+  # Issue described already in: https://github.com/cbcrg/tcoffee/issues/3
+  # Add an A in front of filename if the file begins with A
+  filename=${test_alignment.fileName}
+  first_letter_filename=\${filename:0:1}
+  if [ "\$first_letter_filename" == "A" ]; then input="A"\$filename; else input=\$filename;  fi
+
+  t_coffee -infile \$input -evaluate -output=score_ascii -outfile "${test_alignment.baseName}.tcs"
+
+  """
+
 }

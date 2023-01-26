@@ -16,14 +16,20 @@ def get_best_hits(hits):
 
     # Hits presenting a best match that also have the same id name are prioritized
     df["target_id_nochain"] = df[1].str.split("_",expand = True)[0]
-    df_id_match = df[df[0] == df["target_id_nochain"]]
+    df["target_id_chainmerged"] = df[1].str.replace("_", "").str.lower()
 
+    df_id_match_1 = df[df[0] == df["target_id_nochain"]]
+    df_id_match_2 = df[df[0] == df["target_id_chainmerged"]]
+    df_id_match = pd.concat([df_id_match_1,df_id_match_2])
 
     # Only retain the dataframe
     df_noid_match = df[~df[0].isin(df_id_match[0])].reset_index(drop = True)
-    df_noid_match_filtered = df_noid_match.iloc[[df_noid_match[2].idxmax()]]
 
-    final_df = pd.concat([df_id_match,df_noid_match_filtered])
+    if not df_noid_match.empty:
+        df_noid_match_filtered = df_noid_match.iloc[[df_noid_match[2].idxmax()]]
+        final_df = pd.concat([df_id_match,df_noid_match_filtered])
+    else: 
+        final_df = df_id_match
     return(final_df)
 
 def main():

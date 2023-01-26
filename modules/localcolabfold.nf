@@ -1,7 +1,7 @@
 process RUN_COLABFOLD {
 	tag "${fam_name}"
 	publishDir "${params.af2_db_path}/colabfold/${fam_name}", mode: 'copy', overwrite: true
-
+	container "/users/cn/abaltzis/sing_cache/athbaltzis-colabfold_proteinfold-v0.9.img"
 	input:
 	tuple val(fam_name),val(tree_method),val(dynamicMasterSize), path(fasta)
 	val   model_type

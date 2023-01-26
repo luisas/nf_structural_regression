@@ -32,7 +32,7 @@ process REG_ALIGNER {
 
 
 process DYNAMIC_ALIGNER {
-    container 'luisas/structural_regression:17'
+    container 'luisas/structural_regression:20'
     tag "${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}"
     storeDir "${params.outdir}/alignments/$id/${id}.dynamic.${bucket_size}.dynamicX.${dynamicX}.${masterAln}.${slaveAln}.${tree_method}"
     label 'process_medium'
@@ -54,19 +54,20 @@ process DYNAMIC_ALIGNER {
 
 
 process PROG_ALIGNER_STRUCTURES {
-    container 'luisas/structural_regression:7'
+    container 'luisas/structural_regression:20'
     tag "$align_method - $tree_method on $id"
-    storeDir "${params.outdir}/alignments/${id}/${id}.progressive.${align_method}_$db.${tree_method}"
+    storeDir "${params.outdir}/alignments/${id}/${id}.progressive.${align_method}.${tree_method}"
     label 'process_small'
 
     input:
-    tuple val(id), val(tree_method), path(seqs), path(guide_tree), val(db), path(template), path (structures)
+    tuple val(id), val(tree_method), path(seqs), path(guide_tree), path (structures)
     each align_method
 
 
     output:
     tuple val (id), path ("${id}.progressive.${align_method}.${tree_method}.aln"), emit: alignmentFile
     path ".command.trace", emit: metricFile
+    path "${id}.progressive.${align_method}.${tree_method}.tcs", emit: tcs_file
 
     script:
     template "${path_templates}/progressive_align/prog_${align_method}.sh"
@@ -74,7 +75,7 @@ process PROG_ALIGNER_STRUCTURES {
 
 
 process PROG_ALIGNER {
-    container 'luisas/structural_regression:7'
+    container 'luisas/structural_regression:20'
     tag "$align_method - $tree_method on $id"
     storeDir "${params.outdir}/alignments/${id}/${id}.progressive.${align_method}.${tree_method}"
     label 'process_small'
@@ -91,6 +92,27 @@ process PROG_ALIGNER {
     script:
     template "${path_templates}/progressive_align/prog_${align_method}.sh"
 }
+
+process PROG_ALIGNER_EXPRESSO {
+    container 'luisas/expresso:latest'
+    tag "$align_method - $tree_method on $id"
+    storeDir "${params.outdir}/alignments/${id}/${id}.progressive.${align_method}.${tree_method}"
+    label 'process_small'
+
+    input:
+    tuple val(id), val(tree_method), path(seqs), path(guide_tree)
+    each align_method
+    tuple val(db_id), path(db), path(index)
+
+
+    output:
+    tuple val (id), path ("${id}.progressive.${align_method}.${tree_method}.aln"), emit: alignmentFile
+    path ".command.trace", emit: metricFile
+
+    script:
+    template "${path_templates}/progressive_align/prog_${align_method}.sh"
+}
+
 
 
 

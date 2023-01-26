@@ -1,14 +1,10 @@
 #!/bin/bash nextflow
 
-include {GENERATE_DYNAMIC_CONFIG; EXTRACT_SEQUENCES; ADD_PDB_HEADERS; CHECK_CACHE}      from './preprocess.nf'
-include {ADD_PDB_HEADERS as ADD_PDB_HEADERS_2}      from './preprocess.nf'
-
-include {REG_ALIGNER}       from './generateAlignment.nf'
-include {DYNAMIC_ALIGNER}             from './generateAlignment.nf'
-include {EVAL_ALIGNMENT}    from './modules_evaluateAlignment.nf'
-include {EASEL_INFO}        from './modules_evaluateAlignment.nf'
-include { RUN_COLABFOLD } from './localcolabfold.nf'
-include { split_if_contains } from './functions.nf'
+include {GENERATE_DYNAMIC_CONFIG; EXTRACT_SEQUENCES; ADD_PDB_HEADERS; CHECK_CACHE;} from '../modules/preprocess.nf'
+include { split_if_contains } from '../modules/functions.nf'
+include {DYNAMIC_ALIGNER}       from '../modules/align.nf'
+include { RUN_COLABFOLD } from '../modules/localcolabfold.nf'
+include { EVALUATE_MSA } from '../subworkflows/evaluate.nf'
 
 
 workflow DYNAMIC_ANALYSIS {
@@ -65,16 +61,18 @@ workflow DYNAMIC_ANALYSIS {
                                       .map{ it -> [it[0],it[1],it[2],it[3].flatten()]}
                                       .concat(precomputed_structures)
 
+      //EXTRACT_SEQUENCES.out.templates.map{ it -> [it[0], it[1], it[3], it[2]] }.view()
 
-
+      all_structures_ready = all_structures.map{ it -> [ it[0], it[1], split_if_contains(it[3].baseName, "_alphafold", 0), it[3], split_if_contains(it[0], "-ref", 0)]}
       // How it looks like: all structures -->  [fam,tree,sequence_id, sequence_id.pdb]
-      ADD_PDB_HEADERS(all_structures.map{ it -> [ it[0], it[1], it[2], it[3], split_if_contains(it[0], "-ref", 0)]})
+      ADD_PDB_HEADERS(all_structures_ready)
 
       // Combine by family and tree
       seqs_and_trees
         .combine(ADD_PDB_HEADERS.out.pdb.groupTuple(by: [0,1]), by: [0,1])
         .combine(EXTRACT_SEQUENCES.out.templates.map{ it -> [it[0], it[1], it[3], it[2]] }, by: [0,1])
         .set{ seqs_and_trees_and_structures }
+
 
     }else{
        // TO BE TESTED!!
@@ -107,18 +105,8 @@ workflow DYNAMIC_ANALYSIS {
     */
     if (params.evaluate){
 
-      refs_ch
-        .cross (DYNAMIC_ALIGNER.out.alignmentFile.map{ it -> [split_if_contains(it[0], "-ref", 0), it[1]]})
-        .map { it -> [ it[1][0], it[1][1], it[0][1] ] }
-        .set { alignment_and_ref }
+      EVALUATE_MSA( DYNAMIC_ALIGNER.out.alignmentFile, refs_ch)
 
-
-      EVAL_ALIGNMENT(alignment_and_ref)
-      EASEL_INFO (alignment_and_ref)
-
-      EVAL_ALIGNMENT.out.scores.collect()
-      EVAL_ALIGNMENT.out.scores
-                    .collectFile(name: "dynamic.scores.csv", newLine: true, storeDir:"${params.outdir}/evaluation/CSV/")
     }
 
 

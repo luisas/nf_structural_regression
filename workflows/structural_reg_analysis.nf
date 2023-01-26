@@ -1,12 +1,7 @@
 #!/bin/bash nextflow
 
-include {GENERATE_DYNAMIC_CONFIG}      from './preprocess.nf'
-include {REG_ALIGNER}       from './generateAlignment.nf'
-include {DYNAMIC_ALIGNER}             from './generateAlignment.nf'
-include {EVAL_ALIGNMENT}    from './modules_evaluateAlignment.nf'
-include {EASEL_INFO}        from './modules_evaluateAlignment.nf'
-include {MMSEQS_PREP_DB; MMSEQS_SEARCH; TEMPLATE_FROM_DB_HITS; FETCH_STRUCTURES}        from './structures.nf'
-include {STR_REG_ALIGNER}       from './generateAlignment.nf'
+include {MMSEQS_PREP_DB; MMSEQS_SEARCH; TEMPLATE_FROM_DB_HITS; FETCH_STRUCTURES}        from '../modules/structures.nf'
+include {STR_REG_ALIGNER}       from '../modules/align.nf'
 
 
 workflow STRUCTURAL_REG_ANALYSIS {
@@ -37,6 +32,7 @@ workflow STRUCTURAL_REG_ANALYSIS {
     seqs_trees_structures = seqs_and_trees.combine(FETCH_STRUCTURES.out.fetched_structures, by: [0])
 
     // 5. Align with regressive
+    // Here i need to select the right chain still!
     STR_REG_ALIGNER (seqs_and_trees, align_method, bucket_size)
 
 

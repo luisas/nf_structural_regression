@@ -42,61 +42,10 @@ nextflow.enable.dsl = 2
 
 include { split_if_contains } from './modules/functions.nf'
 
-//testfam="aadh,aat,Acetyltransf,adh,az,blm,blmb,bowman,cah,ChtBD,cryst,cyclo,cytb,DEATH,DMRL_synthase,egf,GEL,ghf10,ghf11,glob,gluts,gpdh,hip,HLH,HMG_box,hormone_rec,hpr,hr,icd,il8,ins,int,KAS,kringle,ldh,LIM,ltn,lyase_1,mmp,msb,myb_DNA-binding,OTCace,PDZ,phc,profilin,proteasome,Rhodanese,rhv,ricin,rnasemam,rrm,rub,scorptoxin,sdr,seatoxin,seatoxin_old,sodcu,sodfe,Stap_Strp_toxin,sti,test,tgfb,tms,TNF,toxin,uce,zf-CCHH"
-//testfam="seatoxin,scorptoxin"
-//testfam="aadh,aat"
-//testfam="rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL,aadh,ace,ACPS,ARM,cat3,ccH,CH"
-//testfam="kringle,cryst,DEATH,cah,mmp"
-//testfam="aadh,seatoxin"
-//testfam = "kringle,cryst,DEATH,cah,mmp,rub,ghf10,tgfb,sodcu,KAS,DMRL_synthase,tms,GEL"
-//testsmallhomfam="blm,egf,gpdh,lyase_1,int,subt,ldh,HLH,LIM,cyclo,proteasome,icd,msb,OTCace,HMG_box,flav,uce,peroxidase,sodfe,ghf1,cys,ace,glob,tim,hr,hormone_rec,hpr,oxidored_q6,asp,cytb,serpin,annexin,aadh,phc,ghf5,Ald_Xan_dh_2,mofe,Sulfotransfer,kunitz,GEL,tms,DMRL_synthase,KAS,sodcu,tgfb,ghf10,rub,mmp,cah,DEATH,cryst,kringle,az,il8,ltn,phoslip,slectin,trfl,ins,ChtBD,ghf22,ricin,profilin,Stap_Strp_toxin,sti,TNF,ghf11,toxin,bowman,rnasemam,cyt3,scorptoxin,hip,seatoxin,test"
-//testfammedium2="rrm,aat,adh,p450,rhv,blmb,PDZ,Rhodanese,hla,aldosered,ghf13,hom,biotin_lipoyl,tRNA-synt_2b,myb_DNA-binding,gluts"
-//testfam="rub,seatoxin,ace"
-//params.testfam="rnasemam, ghf10, HMG_box, egf, rhv,  biotin_lipoyl, adh"
-params.testfam="cryst,egf,cyt3"
-
-//testfam="rvp,blmb"
-//testfamlarge= "aadh,ace,ACPS,ARM,cat3,ccH,CH"
-//testfamxlarge= "aabp,actin,adk,C2,cox,COX2,CPS"
-//testfamhuge= "AAA,ABC_tran,blmb,fn3,rep,sdr"
-params.compressAZ = false
-params.dataset_dir="/users/cn/lsantus/"
-params.dataset = "homfam"
-fasta_dirs="combinedSeqs,refs"
-params.seqs ="${params.dataset_dir}/data/structural_regression/${params.dataset}/combinedSeqs/{$params.testfam}*.fa"
-params.refs = "${params.dataset_dir}/data/structural_regression/${params.dataset}/refs/{$params.testfam}*.ref"
-params.af2_db_path = "${params.dataset_dir}/data/structural_regression/af2_structures"
-
-params.align_methods = "FAMSA"
-params.tree_methods = "FAMSA-medoid"
-
-params.buckets = "50,100"
-
-//  ## DYNAMIC parameters
-params.dynamicX = "100000000"
-params.dynamicMasterAln="tcoffee_msa"
-params.dynamicSlaveAln="famsa_msa"
-
-params.predict = true
-params.n_af2 = 50
-
-pdb_db = Channel.fromPath("${params.pdb_db_path}")
-
-
-params.dynamic_align=false
-params.regressive_align=false
-params.progressive_align=false
-params.structural_regressive_align=false
-
-params.evaluate=true
-
-
-// output directory
-params.outdir = "$baseDir/results/${params.dataset}"
-params.target_db = "PDB"
-params.dbdir = "${params.dataset_dir}/data/db/"
+// Target database (MMSEQS)
 target_db = Channel.fromPath( "${params.dbdir}/${params.target_db}",checkIfExists: true ).map { item -> [ item.baseName, item] }
-
+// Target database (PDB)
+channeled_dbs = Channel.fromPath( params.blast_database ).map { item -> [only_first_extension(item.name), item] }.groupTuple( by:[0]).map{ it -> [it[0], it[1][0],it[1][1..-1]]}
 
 log.info """\
          STRUCTURAL REGRESSION  ~  version 0.1"
@@ -123,15 +72,16 @@ log.info """\
          Output directory (DIRECTORY)                   : ${params.outdir}
          --##--
          Target DB                                      : ${params.dbdir}
+         Blast DB                                      : ${params.blast_database}
          """
          .stripIndent()
 
 // import analysis pipelines
 include { TREE_GENERATION } from './modules/treeGeneration'   params(params)
-include { DYNAMIC_ANALYSIS } from './modules/dynamic_analysis'    params(params)
-include { REG_ANALYSIS } from './modules/reg_analysis'        params(params)
-include { PROG_ANALYSIS } from './modules/prog_analysis'        params(params)
-include { STRUCTURAL_REG_ANALYSIS } from './modules/structural_reg_analysis'        params(params)
+include { DYNAMIC_ANALYSIS } from './workflows/dynamic_analysis'    params(params)
+include { REG_ANALYSIS } from './workflows/reg_analysis'        params(params)
+include { PROG_ANALYSIS } from './workflows/prog_analysis'        params(params)
+include { STRUCTURAL_REG_ANALYSIS } from './workflows/structural_reg_analysis'        params(params)
 
 // Channels
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item] }
@@ -171,7 +121,7 @@ workflow pipeline {
 
     if (params.progressive_align){
       // here the situation about the structures need to be either removed or polished!
-      PROG_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method,structures_ch, target_db)
+      PROG_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method,structures_ch, target_db, channeled_dbs.collect())
     }
 
     if (params.dynamic_align){
@@ -204,4 +154,11 @@ workflow {
          .stripIndent()
 
      sendMail(to: 'luisa.santus95@gmail.com', subject: 'Structural regression pipeline', body: msg)
+ }
+ /*
+  * Extra functions
+  */
+
+ def only_first_extension(String filename){
+   return filename.split("\\.").take(2).join('.')
  }

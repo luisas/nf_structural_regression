@@ -4,4 +4,15 @@ for i in `awk 'sub(/^>/, "")' ${seqs}`; do
 done
 
 
-t_coffee ${seqs} -method TMalign_pair -template_file "template_list.txt" -output fasta_aln -outfile ${id}.progressive.${align_method}.${tree_method}.aln
+
+
+
+t_coffee ${seqs} -method TMalign_pair -template_file "template_list.txt" -out_lib ${id}.progressive.${align_method}.${tree_method}.lib -output fasta_aln -outfile ${id}.progressive.${align_method}.${tree_method}.aln
+
+# Calculate the TCS
+
+filename=${id}
+first_letter_filename=\${filename:0:1}
+if [ "\$first_letter_filename" == "A" ]; then input="A"${id}.progressive.${align_method}.${tree_method}.aln; else input=${id}.progressive.${align_method}.${tree_method}.alne;  fi
+
+t_coffee -infile \$input  -evaluate -lib ${id}.progressive.${align_method}.${tree_method}.lib -output score_ascii -outfile ${id}.progressive.${align_method}.${tree_method}.tcs

@@ -109,9 +109,9 @@ def cum_var(x):
 def plot_scatter_perc(df1,df2,xlabel,ylabel,
                       palette = sns.dark_palette("#3399FF", reverse = True, as_cmap=True),
                       log = True, 
-                      title = "regressive on homfam", hue_var = "n_sequences"): 
+                      title = "regressive on homfam", hue_var = "n_sequences", metric = "tc", size_fig = 1): 
     sns.set_context("talk")
-    f, ax = plt.subplots(figsize=(8, 6.5))
+    f, ax = plt.subplots(figsize=(8*size_fig,6.4*size_fig ))
     
     # Prep df 
     df = df1.merge(df2, on = ["family","n_sequences"])
@@ -125,16 +125,18 @@ def plot_scatter_perc(df1,df2,xlabel,ylabel,
     sm = plt.cm.ScalarMappable(cmap=palette, norm=norm)
     sm.set_array([])
 
+    metric_x = metric+"_x"
+    metric_y = metric+"_y"
     # Plot 
-    ax = sns.scatterplot(data = df, x = "tc_x",
-                    y = "tc_y",
+    ax = sns.scatterplot(data = df, x = metric_x,
+                    y = metric_y,
                     hue = hue_var,
                     s = 120,
                     palette = palette)
     
 
     # % above the line
-    perc_y_better_than_x = (len(list(filter(lambda ele: ele == True, list(df.tc_x <= df.tc_y)))) / len(list(df.tc_x >= df.tc_y))) * 100
+    perc_y_better_than_x = (len(list(filter(lambda ele: ele == True, list(df[metric_x] <= df[metric_y])))) / len(list(df[metric_x]  >= df[metric_y] ))) * 100
     ax.get_legend().remove()
     
     # Color bar 
@@ -152,7 +154,7 @@ def plot_scatter_perc(df1,df2,xlabel,ylabel,
     # Axis labels
     ax.set(xlabel=xlabel,
            ylabel=ylabel,
-           title = title + "\n (n = "+str(len(df.tc_x))+") \n\n % y >= x  "+str(round(perc_y_better_than_x,1))+" \n")
+           title = title + "\n metric: "+metric+"\n (n = "+str(len(df[metric_x] ))+") \n\n % y >= x  "+str(round(perc_y_better_than_x,1))+" \n")
     
 
 
