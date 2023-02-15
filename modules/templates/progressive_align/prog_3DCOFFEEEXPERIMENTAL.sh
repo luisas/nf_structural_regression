@@ -4,10 +4,8 @@ for i in `awk 'sub(/^>/, "")' ${seqs}`; do
 done
 
 
-
-
-
 t_coffee ${seqs} -method TMalign_pair -template_file "template_list.txt" -out_lib ${id}.progressive.${align_method}.${tree_method}.lib -output fasta_aln -outfile ${id}.progressive.${align_method}.${tree_method}.aln
+
 
 # Calculate the TCS
 

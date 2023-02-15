@@ -203,3 +203,25 @@ process ADD_HEADER{
   t_coffee -other_pg extract_from_pdb -force -infile $af2_pdb > ${seq_id}_header.pdb
   """
 }
+
+
+process RENAME_PDB{
+  container 'luisas/structural_regression:17'
+  tag "${fam_name}"
+  storeDir "${params.outdir}/structures/ready/${fam_name}/"
+
+  label "process_low"
+
+  input:
+  tuple val (fam_name), val(seq_id), path (pdb_header)
+
+  output:
+	tuple val(fam_name), val(seq_id), path ("${seq_id}.pdb"), emit: pdbs
+
+
+  script:
+  """
+  # Add the headers
+  cp $pdb_header ${seq_id}.pdb
+  """
+}

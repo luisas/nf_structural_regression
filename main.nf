@@ -83,17 +83,25 @@ include { REG_ANALYSIS } from './workflows/reg_analysis'        params(params)
 include { PROG_ANALYSIS } from './workflows/prog_analysis'        params(params)
 include { STRUCTURAL_REG_ANALYSIS } from './workflows/structural_reg_analysis'        params(params)
 
-// Channels
+// Collect the FASTA files
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item] }
 
+// Collect the STRUCTURES
+if (params.alphafold) {
+  structures_ch = Channel.fromPath("${params.af2_db_path}/colabfold/*/*_alphafold.pdb")
+                         .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName.replace("_alphafold", ""), item] }
+}else{
 
-structures_ch = Channel.fromPath("${params.af2_db_path}/colabfold/*/*_alphafold.pdb")
-                       .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName.replace("_alphafold", ""), item] }
+  structures_ch = Channel.fromPath("${params.experimental_structures_path}")
+                         .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName.replace("_header", ""), item] }
+}
 
 if ( params.refs ) {
   refs_ch = Channel.fromPath( params.refs ).map { item -> [ item.baseName, item] }
 }
 
+//print("${params.af2_db_path}")
+//structures_ch.view()
 
 // Tokenize params
 tree_method = params.tree_methods.tokenize(',')

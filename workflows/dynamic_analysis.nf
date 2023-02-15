@@ -6,7 +6,6 @@ include {DYNAMIC_ALIGNER}       from '../modules/align.nf'
 include { RUN_COLABFOLD } from '../modules/localcolabfold.nf'
 include { EVALUATE_MSA } from '../subworkflows/evaluate.nf'
 
-
 workflow DYNAMIC_ANALYSIS {
   take:
     seqs_and_trees
@@ -106,7 +105,6 @@ workflow DYNAMIC_ANALYSIS {
     if (params.evaluate){
 
       EVALUATE_MSA( DYNAMIC_ALIGNER.out.alignmentFile, refs_ch)
-
     }
 
 

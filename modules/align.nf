@@ -68,6 +68,7 @@ process PROG_ALIGNER_STRUCTURES {
     tuple val (id), path ("${id}.progressive.${align_method}.${tree_method}.aln"), emit: alignmentFile
     path ".command.trace", emit: metricFile
     path "${id}.progressive.${align_method}.${tree_method}.tcs", emit: tcs_file
+    tuple val (id), val(align_method), file(seqs), file(structures), file("${id}.progressive.${align_method}.${tree_method}.aln"), emit: alignmentFiles
 
     script:
     template "${path_templates}/progressive_align/prog_${align_method}.sh"

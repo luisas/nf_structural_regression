@@ -172,31 +172,87 @@ process GAPS_PROGRESSIVE {
 }
 
 
-process TCS_optimize{
 
-  container 'luisas/structural_regression:20'
-  tag "TCS on $id - ${test_alignment.baseName}"
-  storeDir "${params.outdir}/evaluation/tcs_optimization/"
-  label "process_low"
+// iRMSD calculation
+
+
+process EXTRACT_MSA_PAIRS {
+
+  container 'luisas/python:bio3'
+  storeDir "${params.outdir}/${family_id}/alignment/pairs/"
+  label 'process_small'
+  tag "family_id"
 
   input:
-  tuple  val(id), file (test_alignment)
+  tuple val(family_id),file(msa)
 
   output:
-  path ("${test_alignment.baseName}.tcs"), emit: tcs_score
+  tuple val(family_id), file("${family_id}_pair*"), emit: pairs
 
   script:
   """
-
-  # Bad hack to circumvent t_coffee bug
-  # Issue described already in: https://github.com/cbcrg/tcoffee/issues/3
-  # Add an A in front of filename if the file begins with A
-  filename=${test_alignment.fileName}
-  first_letter_filename=\${filename:0:1}
-  if [ "\$first_letter_filename" == "A" ]; then input="A"\$filename; else input=\$filename;  fi
-
-  t_coffee -infile \$input -evaluate -output=score_ascii -outfile "${test_alignment.baseName}.tcs"
-
+  python3 ${path_templates}/scripts/make_pairs.py $family_id $msa
   """
+}
 
+process GET_DISTANCES{
+
+  container 'luisas/structural_regression:17'
+  storeDir "${params.outdir}/${family_id}/evaluation/${evaluation_metric}/distances"
+  label 'process_small'
+  tag "$family_id"
+
+  input:
+  tuple val(family_id), file(msa), file(structures)
+  each evaluation_metric
+  each local_radius
+
+  output:
+  tuple val(family_id), file(msa), file("${msa.baseName}_${evaluation_metric}_${local_radius}.distances"), val(evaluation_metric), val(local_radius), emit: distances
+
+  script:
+  template "${path_templates}/scores/distances_${evaluation_metric}.sh"
+}
+
+
+process GET_SCORE{
+
+  container 'luisas/python:bio3'
+  storeDir "${params.outdir}/${family_id}/evaluation/${evaluation_metric}"
+  label 'process_small'
+  tag "$family_id"
+
+  input:
+  tuple val(family_id), file(msa), file(distances), val(evaluation_metric), val(local_radius)
+
+  output:
+  tuple val(family_id),val(evaluation_metric), val(local_radius), file("${distances.baseName}_extended.score"), emit: score
+
+  script:
+  template "${path_templates}/scores/${evaluation_metric}.sh"
+}
+
+process MERGE_SCORES {
+
+  container 'luisas/python:bio3'
+  storeDir "${params.outdir}/${family_id}/evaluation_summarized/"
+  label 'process_small'
+  tag "${family_id}_${evaluation_metric}_${local_radius}"
+
+  input:
+  tuple val(family_id), val(evaluation_metric), val(local_radius), file(score_files)
+
+  output:
+  tuple val(family_id), file("${family_id}_${evaluation_metric}_${local_radius}_scores.txt"), emit: scores_merged
+
+  script:
+  """
+  for file in $score_files; do cat \$file >>  "${family_id}_${evaluation_metric}_${local_radius}_scores_temp.txt"; done
+
+  # remove headers in the middle
+  echo "aa1,aa2,id,irmsd,local_radius,res,tot_local_residues" > tmpfile
+  sed -i '/^aa/d'  "${family_id}_${evaluation_metric}_${local_radius}_scores_temp.txt"
+  cat "${family_id}_${evaluation_metric}_${local_radius}_scores_temp.txt" >> tmpfile
+  mv tmpfile "${family_id}_${evaluation_metric}_${local_radius}_scores.txt"
+  """
 }

@@ -56,3 +56,14 @@ RUN apt-get install -y python3-pip
 RUN pip3 install --upgrade "pip < 21.0"
 
 RUN pip3 install pandas biopython
+
+
+#
+# Install TMalign and TMscore
+#
+RUN cd / && wget --no-check-certificate https://zhanglab.ccmb.med.umich.edu/TM-align/TMalign.f && \
+        gfortran -static -O3 -ffast-math -lm -o TMalign TMalign.f  && \
+        mv TMalign /bin/ && rm TMalign.f && \
+        wget --no-check-certificate https://zhanglab.ccmb.med.umich.edu/TM-score/TMscore.f && \
+        gfortran -static -O3 -ffast-math -lm -o TMscore TMscore.f && \
+        mv TMscore /bin/ && rm TMscore.f
