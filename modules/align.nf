@@ -139,3 +139,42 @@ process STR_REG_ALIGNER {
     template "${path_templates}/dynamic_align/dynamic_${masterAln}.sh"
 
 }
+
+process ALIGN_WITH_LIBRARY{
+    container 'luisas/structural_regression:20'
+    storeDir "${params.outdir}/alignments_foldseek/$id/${id}.foldseek.${tree_method}.${align_method}"
+    label 'process_medium'
+
+    input:
+    tuple val(id), val(tree_method), file(seqs), file(guide_tree), val(library), path(structures)
+    each align_method
+
+
+    output:
+    tuple val(id), val(tree_method), file(seqs), file(guide_tree), val(library), path(structures), path("${id}.foldseek.${tree_method}.${align_method}.aln"), emit: alignmentFile
+    path ".command.trace", emit: metricFile
+
+    script:
+    """
+    t_coffee -infile $seqs -lib $library -use tree=$tree_method -outfile ${id}.foldseek.${tree_method}.${align_method}.aln -output fasta_aln
+    """
+}
+
+process ALIGN_WITH_3DI {
+    container 'luisas/structural_regression:20'
+    storeDir "${params.outdir}/alignments_foldseek/$id/${id}.3di.${tree_method}.${align_method}"
+    label 'process_medium'
+
+    input:
+    tuple val(id), val(tree_method), file(seqs), file(guide_tree), val(library), path(structures)
+    each align_method
+
+    output: 
+    tuple val(id), val(tree_method), file(seqs), file(guide_tree), val(library), path(structures), path("${id}.3di.${tree_method}.${align_method}.aln"), emit: alignmentFile
+
+    script:
+    """
+    t_coffee -infile $seqs -lib $library -outfile ${id}.3di.${tree_method}.${align_method}.aln -output fasta_aln
+    """
+
+}

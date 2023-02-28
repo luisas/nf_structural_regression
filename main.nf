@@ -82,13 +82,16 @@ include { DYNAMIC_ANALYSIS } from './workflows/dynamic_analysis'    params(param
 include { REG_ANALYSIS } from './workflows/reg_analysis'        params(params)
 include { PROG_ANALYSIS } from './workflows/prog_analysis'        params(params)
 include { STRUCTURAL_REG_ANALYSIS } from './workflows/structural_reg_analysis'        params(params)
+include { FOLDSEEK_ANALYSIS } from './workflows/foldseek_analysis'        params(params)
 
 // Collect the FASTA files
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item] }
 
 // Collect the STRUCTURES
 if (params.alphafold) {
-  structures_ch = Channel.fromPath("${params.af2_db_path}/colabfold/*/*_alphafold.pdb")
+  //str_path = "${params.af2_db_path}/colabfold/*/*_alphafold.pdb"
+  str_path = params.structures_path
+  structures_ch = Channel.fromPath(str_path)
                          .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName.replace("_alphafold", ""), item] }
 }else{
 
@@ -110,6 +113,7 @@ bucket_list = params.buckets.toString().tokenize(',')
 dynamicX = params.dynamicX.toString().tokenize(',')
 dynamicMasterAln = params.dynamicMasterAln.tokenize(',')
 dynamicSlaveAln = params.dynamicSlaveAln.tokenize(',')
+
 
 
 /*
@@ -138,6 +142,10 @@ workflow pipeline {
 
     if (params.structural_regressive_align){
       STRUCTURAL_REG_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method, bucket_list, target_db)
+    }
+
+    if (params.foldseek_align){
+      FOLDSEEK_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method, structures_ch)
     }
 }
 

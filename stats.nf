@@ -45,7 +45,7 @@ process SIM {
     container 'luisas/structural_regression:20'
     tag "SIM on $dataset - ${fasta.baseName}"
     storeDir "${params.outdir}/sim/${dataset}"
-    label "process_low"
+    label "process_big"
 
     input:
     tuple  val(fam_name), val(dataset), path(fasta)
@@ -81,14 +81,15 @@ process STATS_LENGTHS{
 process SIM_STATS {
     container 'luisas/structural_regression:20'
     tag "$fam_name"
-    storeDir "${params.outdir}/sim/${dataset}"
-    label "process_low"
+    storeDir "${params.outdir}/similarity/${dataset}"
+    label "process_small"
 
     input:
     tuple  val(fam_name), val(dataset), path(sim)
 
     output:
     path ("${sim.baseName}.sim_tot"), emit: sim_tot
+    path ("${sim.baseName}.sim_all"), emit: sim_all
 
     script:
     """
@@ -96,6 +97,9 @@ process SIM_STATS {
     echo "$dataset" >> tmp 
     tail -n4 ${sim} | cut -f4 >> tmp
     tr '\n' ',' < tmp > ${sim.baseName}.sim_tot
+
+
+    grep ^AVG bowman.sim | cut -f3,5 | tr "\t" ":" | tr '\n' ',' > ${sim.baseName}.sim_all
     """
 }
 
@@ -105,12 +109,12 @@ process SIM_STATS {
 
 workflow pipeline {
 
-    //CALC_SEQS_LENGTH (seqs_ch)
-    //STATS_LENGTHS(CALC_SEQS_LENGTH.out.seq_lengths.toList())
+    CALC_SEQS_LENGTH (seqs_ch)
+    STATS_LENGTHS(CALC_SEQS_LENGTH.out.seq_lengths.toList())
     SIM(seqs_ch)
     SIM_STATS(SIM.out.sim)
     SIM_STATS.out.sim_tot.map{ it ->  "${it.text}" }
-                    .collectFile(name: "${dataset}_similarities_summary.csv", newLine: false, storeDir:"${params.outdir}/sim/")  
+                    .collectFile(name: "${dataset}_similarities_summary.csv", newLine: true, storeDir:"${params.outdir}/sim/")  
 
 }
 

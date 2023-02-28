@@ -1,5 +1,4 @@
 FROM ubuntu:16.04
-MAINTAINER Luisa Santus <luisa.santus95@gmail.com>
 
 RUN apt-get update && \
     apt-get -y install gcc g++ gfortran && \
@@ -37,13 +36,7 @@ RUN apt-get update && \
     	libiomp-dev
 
 
-# Install TCOFFEE
-RUN git clone https://github.com/luisas/tcoffee.git tcoffee && \
-    cd tcoffee && \
-    git checkout 090eb75b73e562d6e1ad82a365965be23a12e7b8 && \
-    cd t_coffee/src && \
-    make t_coffee && \
-    cp t_coffee /bin/.
+RUN wget https://mmseqs.com/foldseek/foldseek-linux-sse41.tar.gz; tar xvzf foldseek-linux-sse41.tar.gz;  cp ./foldseek/bin/foldseek /bin/.
 
 
 
@@ -55,17 +48,14 @@ RUN apt-get install -y python3-pip
 
 RUN pip3 install --upgrade "pip < 21.0"
 
-RUN pip3 install pandas biopython 
-
-RUN pip3 install itertools
+RUN pip3 install pandas biopython
 
 
-#
-# Install TMalign and TMscore
-#
-RUN cd / && wget --no-check-certificate https://zhanglab.ccmb.med.umich.edu/TM-align/TMalign.f && \
-        gfortran -static -O3 -ffast-math -lm -o TMalign TMalign.f  && \
-        mv TMalign /bin/ && rm TMalign.f && \
-        wget --no-check-certificate https://zhanglab.ccmb.med.umich.edu/TM-score/TMscore.f && \
-        gfortran -static -O3 -ffast-math -lm -o TMscore TMscore.f && \
-        mv TMscore /bin/ && rm TMscore.f
+
+# Install TCOFFEE
+RUN git clone https://github.com/luisas/tcoffee.git tcoffee && \
+    cd tcoffee && \
+    git checkout 090eb75b73e562d6e1ad82a365965be23a12e7b8 && \
+    cd t_coffee/src && \
+    make t_coffee && \
+    cp t_coffee /bin/.
