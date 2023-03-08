@@ -120,24 +120,15 @@ process EASEL_INFO {
 process GAPS_PROGRESSIVE {
     container 'edgano/base:latest'
     tag "GAPS_PROG on $id"
-    publishDir "${params.outdir}/evaluation/gaps", mode: 'copy', overwrite: true
-
+    storeDir "${params.outdir}/evaluation/gaps"
     input:
-    val align_type
     tuple  val (id), file (test_alignment)
-    val align_method
-    val tree_method
-    val bucket_size
 
     output:
     tuple val(id), \
-    val(align_type), \
-    val(bucket_size), \
-    val(align_method), \
-    val(tree_method), \
-    path("*.totGap"), \
-    path("*.numSeq"), \
-    path("*.alnLen"), emit: gapFiles
+    path("${test_alignment.baseName}.totGap"), \
+    path("${test_alignment.baseName}.numSeq"), \
+    path("${test_alignment.baseName}.alnLen"), emit: gapFiles
 
     script:
     """
@@ -149,9 +140,9 @@ process GAPS_PROGRESSIVE {
     globalGap = 0
     avgGap = 0
     auxGap = 0
-    totGapName= "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.totGap"
-    numbSeqName= "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.numSeq"
-    alnLenName= "${id}.${align_type}.${bucket_size}.${align_method}.with.${tree_method}.tree.alnLen"
+    totGapName= "${test_alignment.baseName}.totGap"
+    numbSeqName= "${test_alignment.baseName}.numSeq"
+    alnLenName= "${test_alignment.baseName}.alnLen"
     totGapFile= open(totGapName,"w+")
     numSeqFile= open(numbSeqName,"w+")
     alnLenFile= open(alnLenName,"w+")

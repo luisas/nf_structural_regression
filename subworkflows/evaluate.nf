@@ -1,5 +1,5 @@
 
-include {EVAL_ALIGNMENT; EASEL_INFO; TCS; SIM}    from '../modules/evaluate_alignment.nf'
+include {EVAL_ALIGNMENT; EASEL_INFO; TCS; SIM; GAPS_PROGRESSIVE}    from '../modules/evaluate_alignment.nf'
 include { split_if_contains } from '../modules/functions.nf'
 
 
@@ -21,10 +21,8 @@ workflow EVALUATE_MSA {
     EVAL_ALIGNMENT(alignment_and_ref)
 
     if (params.evaluate_extended){
-      EASEL_INFO(alignments)
-      SIM(alignments)
+      //EASEL_INFO(alignments)
+      //SIM(alignments)
+      GAPS_PROGRESSIVE(alignments)
     }
-
-
-
 }

@@ -161,20 +161,47 @@ process ALIGN_WITH_LIBRARY{
 }
 
 process ALIGN_WITH_3DI {
-    container 'luisas/structural_regression:20'
-    storeDir "${params.outdir}/alignments_foldseek/$id/${id}.3di.${tree_method}.${align_method}"
+    container 'luisas/foldseek_tcoffee:2'
+    storeDir "${params.outdir}/alignments_libraries/$id/${id}.${library_method}.${tree_method}.${align_method}"
     label 'process_medium'
 
     input:
     tuple val(id), val(tree_method), file(seqs), file(guide_tree), val(library), path(structures)
-    each align_method
+    each library_method
 
     output: 
     tuple val(id), val(tree_method), file(seqs), file(guide_tree), val(library), path(structures), path("${id}.3di.${tree_method}.${align_method}.aln"), emit: alignmentFile
 
     script:
     """
-    t_coffee -infile $seqs -lib $library -outfile ${id}.3di.${tree_method}.${align_method}.aln -output fasta_aln
+    t_coffee -infile $seqs -lib $library -tree use=$tree_method -outfile ${id}.${library_method}.${tree_method}.${align_method}.aln -output fasta_aln
     """
 
+}
+
+
+
+process COMPACT_ALIGNER {
+    container 'luisas/tcoffee_compact:2'
+    tag "$align_method - $tree_method - $bucket_size on $id"
+    storeDir "${params.outdir}/compact_benchmark/$id/${id}.regressive_comp_analysis.${bucket_size}.${align_method}.${tree_method}"
+    label 'process_medium'
+
+    input:
+    tuple val(id), val(tree_method), file(seqs), file(guide_tree)
+    each align_method
+    each bucket_size
+
+    output:
+    val align_method, emit: alignMethod
+    val tree_method, emit: treeMethod
+    val bucket_size, emit: bucketSize
+    tuple val (id), path ("${id}.*.aln"), emit: alignmentFile
+    //path "${id}.homoplasy", emit: homoplasyFile
+    path ".command.trace", emit: metricFile
+    //path "${id}.regressive.${bucket_size}.${align_method}.${tree_method}.bucket.log", emit: bucketLogFile
+
+
+    script:
+    template "${path_templates}/compact_align/reg_${align_method}.sh"
 }

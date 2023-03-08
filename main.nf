@@ -83,6 +83,8 @@ include { REG_ANALYSIS } from './workflows/reg_analysis'        params(params)
 include { PROG_ANALYSIS } from './workflows/prog_analysis'        params(params)
 include { STRUCTURAL_REG_ANALYSIS } from './workflows/structural_reg_analysis'        params(params)
 include { FOLDSEEK_ANALYSIS } from './workflows/foldseek_analysis'        params(params)
+include { LIBRARIES_ANALYSIS } from './workflows/libraries_analysis'        params(params)
+include { COMPACT_ANALYSIS } from './workflows/compact_analysis'        params(params)
 
 // Collect the FASTA files
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item] }
@@ -109,13 +111,17 @@ if ( params.refs ) {
 // Tokenize params
 tree_method = params.tree_methods.tokenize(',')
 align_method = params.align_methods.tokenize(',')
+if(params.libraries_test){
+  library_method = params.libraries_test.tokenize(',')
+}
 bucket_list = params.buckets.toString().tokenize(',')
 dynamicX = params.dynamicX.toString().tokenize(',')
 dynamicMasterAln = params.dynamicMasterAln.tokenize(',')
 dynamicSlaveAln = params.dynamicSlaveAln.tokenize(',')
 
-
-
+if(params.libraries_test){
+  matrix = Channel.fromPath(params.matrix)
+}
 /*
  * main script flow
  */
@@ -146,6 +152,14 @@ workflow pipeline {
 
     if (params.foldseek_align){
       FOLDSEEK_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method, structures_ch)
+    }
+
+    if (params.libraries_test){
+      LIBRARIES_ANALYSIS(seqs_and_trees, refs_ch, library_method, tree_method, structures_ch, matrix)
+    }
+    
+    if (params.compact_analysis){
+      COMPACT_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method, bucket_list)
     }
 }
 
