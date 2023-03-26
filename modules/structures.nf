@@ -27,7 +27,7 @@ process MMSEQS_PREP_DB {
 process MMSEQS_SEARCH {
     container 'luisas/mmseqs2test'
     storeDir "${params.outdir}/structures/search_hits/mmseqs/$id/${id}.${db_id}"
-    label 'process_low'
+    label 'process_medium_high'
     tag "$id in $db_id"
 
     input:
@@ -39,7 +39,7 @@ process MMSEQS_SEARCH {
 
     script:
     """
-    mmseqs easy-search --min-seq-id ${params.min_id_mmseqs} -c ${params.min_cov_mmseqs} --cov-mode ${params.covmode_mmseqs} ${seqs} ${db}/${db_id} hits.m8 tmp
+    mmseqs easy-search --min-seq-id ${params.min_id_mmseqs} -c ${params.min_cov_mmseqs} --cov-mode ${params.covmode_mmseqs} ${seqs} ${db}/${db_id} hits.m8 tmp --format-output query,target,fident,alnlen,mismatch,gapopen,qstart,qend,tstart,tend,evalue,bits,qcov,tcov
     """
 
 }
@@ -79,16 +79,55 @@ process FETCH_STRUCTURES {
 
     script:
     """
-    for id in \$(cat $ids_to_download); do wget https://files.rcsb.org/download/\$id.pdb; done
+    #bash "${path_templates}/scripts/fetch_${db_id}.sh"
+    sort $ids_to_download | uniq > ids_to_download_uniq.txt
+
+    for id in \$(cat ids_to_download_uniq.txt); do wget https://alphafold.ebi.ac.uk/files/\$id-model_v4.pdb; done
 
     # Horrible coding - please change if keeping
     # Generate links from name of the protein to the one matched_ref.pdb
-    python3 "${path_templates}/scripts/getlinks.py" ${template} "make_links_tmp.sh" "pdb"
+    python3 "${path_templates}/scripts/getlinks.py" ${template} "make_links_tmp.sh" "-F1-model_v4.pdb"
     [ -f ./make_links_tmp.sh ] && tr ', ' ' ' < make_links_tmp.sh > make_links.sh
     [ -f ./make_links.sh ] && bash ./make_links.sh
     [ -f ./make_links.sh ] && cat ./make_links.sh
     """
 }
+
+
+process FETCH_STRUCTURES_UNIPROT {
+    container 'luisas/python:bio3'
+    storeDir "${params.outdir}/structures/fetched/${db_id}/${id}/"
+    label 'process_small'
+    tag "$id in $db_id"
+
+    input:
+    tuple val(id), val(db_id), file(hits), file(template), file(ids_to_download)
+
+    output:
+    tuple val(id), val(db_id), file(hits), file(template), file("*_ref.pdb"), emit: fetched_structures
+
+    script:
+    """
+    #bash "${path_templates}/scripts/fetch_${db_id}.sh"
+
+    function validate_url(){
+      if [[ `wget -S --spider \$1  2>&1 | grep 'HTTP/1.1 200 OK'` ]]; then echo "true"; else echo "false";  fi
+    }
+
+    sort $ids_to_download | uniq > ids_to_download_uniq.txt
+
+    for id in \$(cat ids_to_download_uniq.txt); do url="https://alphafold.ebi.ac.uk/files/AF-\$id-F1-model_v4.pdb"; if `validate_url \$url == "true"`; then wget \$url; else echo "does not exist"; fi ; done
+
+
+    # Horrible coding - please change if keeping
+    # Generate links from name of the protein to the one matched_ref.pdb
+    python3 "${path_templates}/scripts/getlinks_uniprot.py" ${template} "make_links_tmp.sh" "pdb"
+    [ -f ./make_links_tmp.sh ] && tr ', ' ' ' < make_links_tmp.sh > make_links.sh
+    [ -f ./make_links.sh ] && bash ./make_links.sh
+    [ -f ./make_links.sh ] && cat ./make_links.sh
+    """
+}
+
 
 
 process FETCH_FASTA{
@@ -106,7 +145,9 @@ process FETCH_FASTA{
 
   script:
   """
-  for id in \$(cat $ids_to_download); do wget https://www.rcsb.org/fasta/entry/\$id -O \$id".fa"; done
+  sort $ids_to_download | uniq > ids_to_download_uniq.txt
+
+  for id in \$(cat ids_to_download_uniq.txt); do wget https://www.rcsb.org/fasta/entry/\$id -O \$id".fa"; done
 
   python3 "${path_templates}/scripts/getlinks.py" ${template} "make_links_tmp.sh" "fa"
   [ -f ./make_links_tmp.sh ] && tr ', ' ' ' < make_links_tmp.sh > make_links.sh
@@ -132,7 +173,8 @@ process PREP_STRUCTURES {
     script:
     """
     # Extract the specific protein hit from the hits file, where all are stored
-    awk '/${seq_id}/' $hits > hits.txt
+    tr "/" "_" < $hits > hitsfile
+    awk '/^${seq_id}/' hitsfile > hits.txt
 
     # Extract chain from hits
     CHAIN=\$(awk '{ print \$2 }' hits.txt |  awk -F '[_]' '{ print \$2 }')

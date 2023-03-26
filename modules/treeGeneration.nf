@@ -1,5 +1,4 @@
 #!/bin/bash nextflow
-params.outdir = 'results'
 
 include { set_templates_path } from './functions.nf'
 path_templates = set_templates_path()

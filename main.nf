@@ -73,6 +73,7 @@ log.info """\
          --##--
          Target DB                                      : ${params.dbdir}
          Blast DB                                      : ${params.blast_database}
+         af2_db_path                                   : ${params.alphafold}
          """
          .stripIndent()
 
@@ -85,6 +86,7 @@ include { STRUCTURAL_REG_ANALYSIS } from './workflows/structural_reg_analysis'  
 include { FOLDSEEK_ANALYSIS } from './workflows/foldseek_analysis'        params(params)
 include { LIBRARIES_ANALYSIS } from './workflows/libraries_analysis'        params(params)
 include { COMPACT_ANALYSIS } from './workflows/compact_analysis'        params(params)
+include { MSA_3DI_ANALYSIS } from './workflows/msa_3di_analysis'        params(params)
 
 // Collect the FASTA files
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item] }
@@ -94,7 +96,8 @@ if (params.alphafold) {
   //str_path = "${params.af2_db_path}/colabfold/*/*_alphafold.pdb"
   str_path = params.structures_path
   structures_ch = Channel.fromPath(str_path)
-                         .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName.replace("_alphafold", ""), item] }
+                         .map { item -> [split_if_contains(item.getParent().getParent().baseName, "-ref", 0) , item.baseName.replace("_alphafold", ""), item] }
+
 }else{
 
   structures_ch = Channel.fromPath("${params.experimental_structures_path}")
@@ -107,17 +110,19 @@ if ( params.refs ) {
 
 //print("${params.af2_db_path}")
 //structures_ch.view()
-
+print(params.dataset_dir)
 // Tokenize params
 tree_method = params.tree_methods.tokenize(',')
 align_method = params.align_methods.tokenize(',')
 if(params.libraries_test){
-  library_method = params.libraries_test.tokenize(',')
+  library_method = params.library_method.tokenize(',')
 }
+library_method = params.library_method.tokenize(',')
 bucket_list = params.buckets.toString().tokenize(',')
 dynamicX = params.dynamicX.toString().tokenize(',')
 dynamicMasterAln = params.dynamicMasterAln.tokenize(',')
 dynamicSlaveAln = params.dynamicSlaveAln.tokenize(',')
+matrix = Channel.fromPath(params.matrix)
 
 if(params.libraries_test){
   matrix = Channel.fromPath(params.matrix)
@@ -132,6 +137,12 @@ workflow pipeline {
         .cross(TREE_GENERATION.out.trees)
         .map { it -> [ it[1][0], it[1][1], it[0][1], it[1][2] ] }
         .set { seqs_and_trees }
+
+    seqs_ch.view()
+    trees = TREE_GENERATION.out.trees.view()
+    trees.view()
+    print(tree_method)
+    //seqs_and_trees.view()
 
     if (params.regressive_align){
       REG_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method, bucket_list)
@@ -161,7 +172,13 @@ workflow pipeline {
     if (params.compact_analysis){
       COMPACT_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method, bucket_list)
     }
+    
+    if (params.msafold){
+      MSA_3DI_ANALYSIS(seqs_and_trees, refs_ch, library_method, tree_method, bucket_list, structures_ch, matrix)
+    }
 }
+
+
 
 workflow {
   pipeline()

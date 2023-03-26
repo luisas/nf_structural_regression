@@ -77,6 +77,3 @@ f = open(outname+".fa", "w")
 f.write(">"+seq_id + '\n')
 f.write(sequence+ '\n')
 f.close()
-
-
-# In[ ]:

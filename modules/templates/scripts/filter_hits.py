@@ -49,7 +49,9 @@ def main():
     df["target_id_nochain"].to_csv(output_ids, sep="\t", header=None, index=False)
 
     # 3. Create file also with chain informations
-    df["chain"] = df[1].str.split("_", expand = True)[1]
+    df["chain"] = "NA"
+    if "_" in df[1]:
+        df[df[1].str.contains("_")]["chain"] = df[df[1].str.contains("_")][1].str.split("_", expand = True)[1]
     df[[0,1,"chain","target_id_nochain"]].to_csv(output_chains, sep="\t", header=None, index=False)
 
     # 4. Create template file

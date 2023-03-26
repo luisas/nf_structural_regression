@@ -146,17 +146,19 @@ process ALIGN_WITH_LIBRARY{
     label 'process_medium'
 
     input:
-    tuple val(id), val(tree_method), file(seqs), file(guide_tree), val(library), path(structures)
+    tuple val(id), val(tree_method), file(seqs), file(guide_tree), path(library)
     each align_method
 
 
     output:
-    tuple val(id), val(tree_method), file(seqs), file(guide_tree), val(library), path(structures), path("${id}.foldseek.${tree_method}.${align_method}.aln"), emit: alignmentFile
+    tuple val(id), val(tree_method), file(seqs), file(guide_tree), path(library), path("${id}.foldseek.${tree_method}.${align_method}.aln"), emit: alignment
+    tuple val (id),path("${id}.foldseek.${tree_method}.${align_method}.aln"), emit: alignmentFile
+
     path ".command.trace", emit: metricFile
 
     script:
     """
-    t_coffee -infile $seqs -lib $library -use tree=$tree_method -outfile ${id}.foldseek.${tree_method}.${align_method}.aln -output fasta_aln
+    t_coffee -infile $seqs -lib $library -usetree=$guide_tree -outfile ${id}.foldseek.${tree_method}.${align_method}.aln -output fasta_aln
     """
 }
 
@@ -182,7 +184,7 @@ process ALIGN_WITH_3DI {
 
 
 process COMPACT_ALIGNER {
-    container 'luisas/tcoffee_compact:2'
+    container 'luisas/compact'
     tag "$align_method - $tree_method - $bucket_size on $id"
     storeDir "${params.outdir}/compact_benchmark/$id/${id}.regressive_comp_analysis.${bucket_size}.${align_method}.${tree_method}"
     label 'process_medium'

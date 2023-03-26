@@ -9,6 +9,8 @@ process STRUCTURE_TO_3DI{
     
     output:
     tuple val(id), path ("*3di.out"), emit: mapping
+    path ".command.trace", emit: metricFile
+
     
     script:
     """

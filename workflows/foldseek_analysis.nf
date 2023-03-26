@@ -25,12 +25,12 @@ workflow FOLDSEEK_ANALYSIS {
 
     align_method_string = align_method.toString().replace("[", "").replace("]", "")
 
-
+    print("Align method: ${align_method_string}")
     seqs_and_trees = seqs_and_trees.map{ it -> [split_if_contains(it[0], "-ref", 0), it[0], it[1], it[2], it[3]]}
     seqs_and_trees_and_structures = seqs_and_trees.combine(structures, by: [0]).groupTuple(by:[1,2,3,4])
                                                     .map { it -> [ it[1], it[2], it[3], it[4], it[6]]}
 
-
+    seqs_and_trees_and_structures.view()
     if(align_method_string == "foldseek_library"){
       // The problem here is that foldseek does not seem to be able to generate a global MSA 
       GENERATE_LIBRARY(seqs_and_trees_and_structures)
