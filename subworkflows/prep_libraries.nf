@@ -1,6 +1,5 @@
 
 include { split_if_contains } from '../modules/functions.nf'
-
 include { STRUCTURE_TO_3DI;   ENCODE_FASTA } from '../modules/encoding.nf'
 include { ALIGN_WITH_3DI } from '../modules/align.nf'
 include { MERGE_MAPPINGS } from '../modules/utils.nf'

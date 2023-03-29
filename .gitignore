@@ -5,3 +5,5 @@ work
 null
 data
 .nfs*
+notebook/02_foldseek/.ipynb_checkpoints/*
+notebook/02_foldseek/.ipynb_checkpoints/

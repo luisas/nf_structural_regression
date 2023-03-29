@@ -207,3 +207,49 @@ process COMPACT_ALIGNER {
     script:
     template "${path_templates}/compact_align/reg_${align_method}.sh"
 }
+
+
+
+process FS_ALIGNER {
+    container 'luisas/fsmsa:3'
+    tag "$id"
+    storeDir "${params.outdir}/fs_benchmark/$id/${id}.regressive_fs_analysis.${library_method}.${tree_method}"
+    label 'process_medium'
+
+    input:
+    tuple val(id), val(tree_method), file(seqs), file(guide_tree), file(fs_dir)
+    file(matrix)
+    each(library_method)
+
+    output:
+
+    tuple val (id), path ("${id}.*.aln"), emit: alignmentFile
+    path ".command.trace", emit: metricFile
+
+
+    script:
+    template "${path_templates}/fs_align/fs_${library_method}.sh"
+}
+
+process FSREG_ALIGNER {
+    container 'luisas/fsmsa:3'
+    tag "$id"
+    storeDir "${params.outdir}/fs_benchmark/$id/${id}.regressive_fs_analysis_${params.targetDB}.${library_method}.${tree_method}"
+    label 'process_medium'
+
+    input:
+    tuple val(id), val(tree_method), file(seqs), file(guide_tree), file(templatedir)
+    file(matrix)
+    each(library_method)
+    file(methodfile)
+    each bucket_size
+
+
+    output:
+    tuple val (id), path ("${id}.*.aln"), emit: alignmentFile
+    path ".command.trace", emit: metricFile
+
+
+    script:
+    template "${path_templates}/regfs_align/regfs_${library_method}.sh"
+}

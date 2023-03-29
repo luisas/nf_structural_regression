@@ -104,9 +104,6 @@ process SIM_STATS {
 }
 
 
-
-
-
 workflow pipeline {
 
     CALC_SEQS_LENGTH (seqs_ch)

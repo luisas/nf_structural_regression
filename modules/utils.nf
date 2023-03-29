@@ -1,7 +1,7 @@
 process MERGE_MAPPINGS {
 
   container 'luisas/python:bio3'
-  storeDir "${params.outdir}/alphabet/3di/${id}/"
+  storeDir "${params.outdir}/alphabet/3di/${params.targetDB}/${id}/"
   label 'process_small'
 
   input:
@@ -15,3 +15,5 @@ process MERGE_MAPPINGS {
   for file in $files; do cat \$file >>  "${id}.mapping"; done
   """
 }
+
+
