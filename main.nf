@@ -80,12 +80,12 @@ include { TREE_GENERATION } from './modules/treeGeneration'   params(params)
 include { DYNAMIC_ANALYSIS } from './workflows/dynamic_analysis'    params(params)
 include { REG_ANALYSIS } from './workflows/reg_analysis'        params(params)
 include { PROG_ANALYSIS } from './workflows/prog_analysis'        params(params)
-include { STRUCTURAL_REG_ANALYSIS } from './workflows/structural_reg_analysis'        params(params)
 include { LIBRARIES_ANALYSIS } from './workflows/libraries_analysis'        params(params)
 include { COMPACT_ANALYSIS } from './workflows/compact_analysis'        params(params)
 include { MSA_3DI_ANALYSIS } from './workflows/msa_3di_analysis'        params(params)
 include { REGFS_ANALYSIS } from './workflows/regfs_analysis'        params(params)
 include { set_templates_path } from './modules/functions.nf'
+include {STRUCTURAL_ANALYSIS } from './workflows/structural_analysis' params(params)
 path_templates = set_templates_path()
 
 // Collect the FASTA files
@@ -97,29 +97,28 @@ if ( params.refs ) {
 }
 
 // Collect the STRUCTURES
-print(params.structures_path)
 str_path = params.structures_path
 if(params.targetDB == "AF2_PRED"){
   structures_ch = Channel.fromPath(str_path)
                         .map { item -> [split_if_contains(item.getParent().getParent().baseName, "-ref", 0) , item.baseName.replace("_alphafold", ""), item] }
 }else if(params.targetDB == "UniProtKB"){
-  print("UniProtKB")
-  structures_ch = Channel.fromPath(str_path)
-                          .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName.replace("_alphafold", ""), item] }
+  structures_ch = Channel.fromPath(params.structures_path)
+                          .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName, item] }
+  foldseek_ch = Channel.fromPath(params.foldseek_path, type: 'dir')
+                          .map { item -> [split_if_contains(item.baseName, "-ref", 0) , item.getParent().baseName , item] }
+  foldseek_ch.view()
 }
+
+ 
 // if (params.alphafold) {
 //   //str_path = "${params.af2_db_path}/colabfold/*/*_alphafold.pdb"
 //   str_path = params.structures_path
 //   // here was with af2 path, deep cleaning needed
 //  // structures_ch = Channel.fromPath(str_path)
 //  //                        .map { item -> [split_if_contains(item.getParent().getParent().baseName, "-ref", 0) , item.baseName.replace("_alphafold", ""), item] }
-
 //   structures_ch = Channel.fromPath(str_path)
 //                           .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName.replace("_alphafold", ""), item] }
-
-
 // }else{
-
 //   structures_ch = Channel.fromPath("${params.experimental_structures_path}")
 //                          .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName.replace("_header", ""), item] }
 // }
@@ -128,17 +127,21 @@ if(params.targetDB == "AF2_PRED"){
 // Tokenize params
 tree_method = params.tree_methods.tokenize(',')
 align_method = params.align_methods.tokenize(',')
-library_method = params.library_methods.tokenize(',')
+if(params.library_methods){
+  library_method = params.library_methods.tokenize(',')
+}
 bucket_list = params.buckets.toString().tokenize(',')
 dynamicX = params.dynamicX.toString().tokenize(',')
 dynamicMasterAln = params.dynamicMasterAln.tokenize(',')
 dynamicSlaveAln = params.dynamicSlaveAln.tokenize(',')
-matrix = Channel.fromPath(params.matrix)
+if(params.matrix){
+  matrix = Channel.fromPath(params.matrix)
+}
 methodfile_path = "${path_templates}/method_files/${params.library_methods}.txt"
 methodfile = Channel.fromPath(methodfile_path)
+methodfile_3d_path = "${path_templates}/method_files/tmalign_3dcoffee.txt"
+methodfile_3d = Channel.fromPath(methodfile_3d_path)
 
-
-print(params.dataset_dir)
 /*
  * main script flow
  */
@@ -163,10 +166,6 @@ workflow pipeline {
       DYNAMIC_ANALYSIS(seqs_and_trees, refs_ch, tree_method, bucket_list, dynamicMasterAln, dynamicSlaveAln, dynamicX, structures_ch)
     }
 
-    if (params.structural_regressive_align){
-      STRUCTURAL_REG_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method, bucket_list, target_db)
-    }
-
     if (params.libraries_test){
       LIBRARIES_ANALYSIS(seqs_and_trees, refs_ch, library_method, tree_method, structures_ch, matrix)
     }
@@ -180,9 +179,12 @@ workflow pipeline {
     }
 
     if (params.regfold){
-      print("Running the regressive fs analysis")
       REGFS_ANALYSIS(seqs_and_trees, refs_ch, library_method, tree_method, bucket_list, structures_ch, matrix, methodfile)
     }
+    if (params.structural_analyisis){
+      STRUCTURAL_ANALYSIS(seqs_and_trees, refs_ch, library_method, tree_method, bucket_list, structures_ch, foldseek_ch, matrix, methodfile, methodfile_3d)
+    }
+
 }
 
 
@@ -191,27 +193,6 @@ workflow {
   pipeline()
 }
 
-/*
- * completion handler
- */
- workflow.onComplete {
-
-     def msg = """\
-         Pipeline execution summary
-         ---------------------------
-         Completed at: ${workflow.complete}
-         Duration    : ${workflow.duration}
-         Success     : ${workflow.success}
-         workDir     : ${workflow.workDir}
-         exit status : ${workflow.exitStatus}
-         """
-         .stripIndent()
-
-     sendMail(to: 'luisa.santus95@gmail.com', subject: 'Structural regression pipeline', body: msg)
- }
- /*
-  * Extra functions
-  */
 
  def only_first_extension(String filename){
    return filename.split("\\.").take(2).join('.')

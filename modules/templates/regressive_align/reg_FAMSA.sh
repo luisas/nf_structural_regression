@@ -16,4 +16,3 @@ t_coffee -reg -reg_method famsa_msa \
          -outfile ${id}.regressive.${bucket_size}.${align_method}.${tree_method}.aln 2> tcoffee.stderr
 
 
-mv buckets.log ${id}.regressive.${bucket_size}.${align_method}.${tree_method}.bucket.log

@@ -24,7 +24,7 @@ process STRUCTURE_TO_3DI{
         echo -e -n ' \t ' >> \${st_id}_3di.out
         echo -n `cut -f2 \${st_id}_3di_temp.out` >> \${st_id}_3di.out
         echo -e -n ' \t ' >> \${st_id}_3di.out
-        echo -n `cut -f3 \${st_id}_3di_temp.out` >> \${st_id}_3di.out
+        echo `cut -f3 \${st_id}_3di_temp.out` >> \${st_id}_3di.out
     done
     """
 }
@@ -43,7 +43,8 @@ process  ENCODE_FASTA{
     
     script:
     """
-    encode_fasta.py $seqs $mapping ${id}.3di.fa
+    sed "s#/#_#g" $seqs > input.fa
+    encode_fasta.py input.fa $mapping ${id}.3di.fa
     """
 }
 

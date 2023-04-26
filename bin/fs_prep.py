@@ -13,7 +13,7 @@ output_dir = sys.argv[2]
 mapping = pd.read_csv(mapping_file, sep = "\t", header = None, engine = "python")
 mapping.columns = ["id", "seq", "map"]
 mapping.id = mapping.id.str.replace("_alphafold.pdb", "", regex = False)
-mapping['id'] = mapping['id'].str.split('.pdb').str[0] + '.pdb'
+mapping['id'] = mapping['id'].str.split('.pdb').str[0]
 
 # create the output directory if it doesn't exist
 if not os.path.exists(output_dir):

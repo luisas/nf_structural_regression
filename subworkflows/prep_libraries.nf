@@ -31,6 +31,35 @@ workflow FOLDSEEK_LIBRARY {
 
 }
 
+
+workflow FOLDSEEK_LIBRARY_INTEGRATED {
+
+  take:
+    fastas
+    structures
+    matrix
+
+  main:
+    // Prepare the mapping file  
+    fastas = fastas.map{ it -> [split_if_contains(it[0], "-ref", 0), it[0], it[1]]}
+    STRUCTURE_TO_3DI(structures.groupTuple(by:0).map{it -> [it[0], it[2]]})
+    MERGE_MAPPINGS(STRUCTURE_TO_3DI.out.mapping)
+    mapping = MERGE_MAPPINGS.out.mapping
+    fastas_to_map = fastas.combine(mapping, by:0)
+    fastas_to_map = fastas_to_map.map{ it -> [it[1], it[2], it[3]]}
+    // Prepare the fasta file
+    ENCODE_FASTA(fastas_to_map)
+    // Generate library 
+    foldseek_library = LIBRARY_3DI(ENCODE_FASTA.out.encoded_fasta, matrix).library
+
+  emit: 
+    library = foldseek_library
+
+}
+
+
+
+
 workflow SEQUENCE_LIBRARY{
 
     take:

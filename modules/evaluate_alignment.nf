@@ -163,6 +163,34 @@ process GAPS_PROGRESSIVE {
 }
 
 
+process EVAL_IRMSD{
+
+  container 'luisas/structural_regression:7'
+  tag "EVAL_ALIGNMENT on $id"
+  storeDir "${params.outdir}/evaluation/irmsd/"
+  label "process_low"
+
+  input:
+  tuple  val(id), file (msa), file (structures)
+
+  output:
+  path ("${msa.baseName}.total_irmsd"), emit: irmsd_summary
+
+  script: 
+  """
+  # Prep templates
+  for i in `awk 'sub(/^>/, "")' ${msa}`; do
+      id_pdb=`echo \$i |  sed 's./._.g'`;  echo -e ">"\$i "_P_" "\${id_pdb}" >> template_list.txt
+  done
+
+  # Comp irmsd
+  t_coffee -other_pg irmsd $msa -template_file template_list.txt | grep "TOTAL" > ${msa.baseName}.total_irmsd
+  """
+}
+
+
+
+
 
 // iRMSD calculation
 

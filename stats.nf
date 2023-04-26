@@ -1,20 +1,21 @@
 
 nextflow.enable.dsl = 2
-
-params.dataset_dir="/users/cn/lsantus/"
-dataset = "homfam,extHomfam_v35-uniprot"
 dataset = "homfam"
-missing_fams = "ABC_tran,response_reg"
-//missing_fams = "seatoxin,hip"
-
-//params.seqs ="${params.dataset_dir}/data/structural_regression/{${dataset}}/combinedSeqs/*.fa"
-
+params.dataset_dir="/users/cn/lsantus/"
+params.dataset_dir="/users/cn/lsantus/"
 params.seqs ="${params.dataset_dir}/data/structural_regression/${dataset}/combinedSeqs/*.fa"
-
 params.path_scripts = "$baseDir/bin"
-print("${params.dataset_dir}")
-
 params.outputdir = "${params.dataset_dir}/data/structural_regression/stats/"
+
+
+//dataset = "homfam,extHomfam_v35-uniprot"
+//missing_fams = "ABC_tran,response_reg"
+//missing_fams = "seatoxin,hip"
+//params.seqs ="${params.dataset_dir}/data/structural_regression/${dataset}/combinedSeqs/*.fa"
+
+
+print( "${params.outputdir}/sim/${dataset}")
+
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item.getParent().getParent().baseName, item] }
 
 
@@ -44,7 +45,7 @@ process CALC_SEQS_LENGTH{
 process SIM {
     container 'luisas/structural_regression:20'
     tag "SIM on $dataset - ${fasta.baseName}"
-    storeDir "${params.outdir}/sim/${dataset}"
+    storeDir "${params.outputdir}/sim/${dataset}"
     label "process_big"
 
     input:
@@ -81,7 +82,7 @@ process STATS_LENGTHS{
 process SIM_STATS {
     container 'luisas/structural_regression:20'
     tag "$fam_name"
-    storeDir "${params.outdir}/similarity/${dataset}"
+    storeDir "${params.outputdir}/sim/${dataset}"
     label "process_small"
 
     input:
@@ -89,17 +90,14 @@ process SIM_STATS {
 
     output:
     path ("${sim.baseName}.sim_tot"), emit: sim_tot
-    path ("${sim.baseName}.sim_all"), emit: sim_all
+    //path ("${sim.baseName}.sim_all"), emit: sim_all
 
     script:
     """
     echo "$fam_name" > tmp 
     echo "$dataset" >> tmp 
-    tail -n4 ${sim} | cut -f4 >> tmp
+    grep ^TOT $sim | cut -f4 >> tmp
     tr '\n' ',' < tmp > ${sim.baseName}.sim_tot
-
-
-    grep ^AVG bowman.sim | cut -f3,5 | tr "\t" ":" | tr '\n' ',' > ${sim.baseName}.sim_all
     """
 }
 

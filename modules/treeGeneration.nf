@@ -15,7 +15,7 @@ process TREE_GENERATION {
 
     output:
     tuple val (id), val(tree_method), path ("${id}.${tree_method}.dnd"), emit: trees
-    path ".command.trace", emit: metricFile
+    //path ".command.trace", emit: metricFile
 
 
     script:

@@ -6,7 +6,7 @@ path_templates = set_templates_path()
 
 
 process REG_ALIGNER {
-    container 'luisas/structural_regression:16'
+    container 'edgano/tcoffee:pdb'
     tag "$align_method - $tree_method - $bucket_size on $id"
     storeDir "${params.outdir}/alignments/$id/${id}.regressive.${bucket_size}.${align_method}.${tree_method}"
     label 'process_medium'
@@ -23,7 +23,7 @@ process REG_ALIGNER {
     tuple val (id), path ("${id}.*.aln"), emit: alignmentFile
     path "${id}.homoplasy", emit: homoplasyFile
     path ".command.trace", emit: metricFile
-    path "${id}.regressive.${bucket_size}.${align_method}.${tree_method}.bucket.log", emit: bucketLogFile
+    //path "${id}.regressive.${bucket_size}.${align_method}.${tree_method}.bucket.log", emit: bucketLogFile
 
 
     script:
@@ -200,7 +200,7 @@ process COMPACT_ALIGNER {
     val bucket_size, emit: bucketSize
     tuple val (id), path ("${id}.*.aln"), emit: alignmentFile
     //path "${id}.homoplasy", emit: homoplasyFile
-    path ".command.trace", emit: metricFile
+    // path ".command.trace", emit: metricFile
     //path "${id}.regressive.${bucket_size}.${align_method}.${tree_method}.bucket.log", emit: bucketLogFile
 
 
@@ -234,7 +234,7 @@ process FS_ALIGNER {
 process FSREG_ALIGNER {
     container 'luisas/fsmsa:3'
     tag "$id"
-    storeDir "${params.outdir}/fs_benchmark/$id/${id}.regressive_fs_analysis_${params.targetDB}.${library_method}.${tree_method}"
+    storeDir "${params.outdir}/regressive_foldseek/$id/${id}.regressive_foldseek_${params.targetDB}.${library_method}.${tree_method}.${bucket_size}"
     label 'process_medium'
 
     input:
@@ -251,5 +251,52 @@ process FSREG_ALIGNER {
 
 
     script:
-    template "${path_templates}/regfs_align/regfs_${library_method}.sh"
+    template "${path_templates}/regfs_align/regfs_template.sh"
+}
+
+
+process REG_ALIGNER_STR {
+    container 'luisas/compact'
+    tag "$align_method - $tree_method - $bucket_size on $id"
+    storeDir "${params.outdir}/compact_benchmark/$id/${id}.regressive_comp_analysis.${bucket_size}.${align_method}.${tree_method}"
+    label 'process_medium'
+
+    input:
+    tuple val(id), val(tree_method), path(seqs), path(guide_tree), path (structures)
+    each align_method
+    each bucket_size
+
+    output:
+    val align_method, emit: alignMethod
+    val tree_method, emit: treeMethod
+    val bucket_size, emit: bucketSize
+    tuple val (id), path ("${id}.*.aln"), emit: alignmentFile
+
+
+
+    script:
+    template "${path_templates}/regressive_align/reg_${align_method}.sh"
+}
+
+
+process STRREG_ALIGNER {
+    container 'luisas/fsmsa:3'
+    tag "$id"
+    storeDir "${params.outdir}/regressive_3d_test/$id/${id}.regressive_3d_${params.targetDB}.${library_method}.${tree_method}.${bucket_size}"
+    label 'process_medium'
+
+    input:
+    tuple val(id), val(tree_method), file(seqs), file(guide_tree), file(structures)
+    each(align_method)
+    file(methodfile)
+    each bucket_size
+
+
+    output:
+    tuple val (id), path ("${id}.*.aln"), emit: alignmentFile
+    path ".command.trace", emit: metricFile
+
+
+    script:
+    template "${path_templates}/regfs_align/reg3d_template.sh"
 }

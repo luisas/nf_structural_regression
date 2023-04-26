@@ -1,0 +1,2 @@
+t_coffee $input -method TMalign_pair -template_file FULLPATH/template_list.txt -template_dir_E_ FULLPATH -output fasta_aln -outfile $output
+
