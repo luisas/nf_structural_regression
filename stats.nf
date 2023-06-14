@@ -1,26 +1,7 @@
 
 nextflow.enable.dsl = 2
-dataset = "homfam"
-params.dataset_dir="/users/cn/lsantus/"
-params.dataset_dir="/users/cn/lsantus/"
-params.seqs ="${params.dataset_dir}/data/structural_regression/${dataset}/combinedSeqs/*.fa"
-params.path_scripts = "$baseDir/bin"
-params.outputdir = "${params.dataset_dir}/data/structural_regression/stats/"
-
-
-//dataset = "homfam,extHomfam_v35-uniprot"
-//missing_fams = "ABC_tran,response_reg"
-//missing_fams = "seatoxin,hip"
-//params.seqs ="${params.dataset_dir}/data/structural_regression/${dataset}/combinedSeqs/*.fa"
-
-
-print( "${params.outputdir}/sim/${dataset}")
 
 seqs_ch = Channel.fromPath( params.seqs, checkIfExists: true ).map { item -> [ item.baseName, item.getParent().getParent().baseName, item] }
-
-
-//seqs_split = seqs_ch.splitFasta(by: 100_000, file: true).map { item -> [ item[0], item[1], item[2],item[2].baseName] }
-//seqs_split.view()
 
 
 process CALC_SEQS_LENGTH{
@@ -45,7 +26,7 @@ process CALC_SEQS_LENGTH{
 process SIM {
     container 'luisas/structural_regression:20'
     tag "SIM on $dataset - ${fasta.baseName}"
-    storeDir "${params.outputdir}/sim/${dataset}"
+    storeDir "${params.outputdir}/sim_idscore/${dataset}"
     label "process_big"
 
     input:
@@ -56,7 +37,7 @@ process SIM {
 
     script:
     """
-    t_coffee -other_pg seq_reformat -in ${fasta} -output=sim > "${fasta.baseName}.sim"
+    t_coffee -other_pg seq_reformat -in ${fasta} -output=sim_idscore > "${fasta.baseName}.sim"
     """
 }
 
@@ -64,7 +45,7 @@ process SIM {
 process STATS_LENGTHS{
 
   container 'luisas/python:bio3'
-  storeDir "${params.outputdir}/seq_lengths/"
+  publishDir "${params.outputdir}/seq_lengths/" , mode: 'copy'
   label "process_low"
 
   input:
@@ -82,7 +63,7 @@ process STATS_LENGTHS{
 process SIM_STATS {
     container 'luisas/structural_regression:20'
     tag "$fam_name"
-    storeDir "${params.outputdir}/sim/${dataset}"
+    storeDir "${params.outputdir}/sim_idscore/${dataset}"
     label "process_small"
 
     input:
@@ -109,7 +90,7 @@ workflow pipeline {
     SIM(seqs_ch)
     SIM_STATS(SIM.out.sim)
     SIM_STATS.out.sim_tot.map{ it ->  "${it.text}" }
-                    .collectFile(name: "${dataset}_similarities_summary.csv", newLine: true, storeDir:"${params.outdir}/sim/")  
+                    .collectFile(name: "${params.dataset}_similarities_summary.csv", newLine: true, storeDir:"${params.outdir}/sim_idscore/")  
 
 }
 

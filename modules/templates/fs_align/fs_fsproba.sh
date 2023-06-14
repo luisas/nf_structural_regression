@@ -5,4 +5,5 @@ t_coffee -seq $seqs \
          -outfile ${id}.fs_sequence.${tree_method}.aln \
          -output fasta_aln \
          -usetree $guide_tree \
-         -fs_matrix $matrix 
+         -fs_matrix $matrix \
+         -out_lib ${id}.fs_sequence.${tree_method}.lib 

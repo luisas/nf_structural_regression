@@ -8,10 +8,10 @@ def get_seq_lengths_stats():
     files = [f for f in listdir(".") if f.endswith('csv') ]
     summary = pd.DataFrame()
     for file in files:
-        print(file)
         df = pd.read_csv(file)
         stats_df = df.groupby(by=['family']).agg({'sequence length':['mean', 'median', "max"]})["sequence length"].reset_index()
         stats_df["benchmarking_dataset"] = df["benchmarking_dataset"][1]
+        stats_df["n_sequences"] = len(df)
         summary = pd.concat(list([summary,stats_df]), ignore_index = True)
     return(summary)
 

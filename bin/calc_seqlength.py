@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 from Bio import SeqIO
 import pandas as pd
+import time
+
+
 
 def get_seq_lengths(fasta_file):
     fasta_sequences = SeqIO.parse(open(fasta_file),'fasta')

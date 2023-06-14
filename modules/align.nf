@@ -66,9 +66,10 @@ process PROG_ALIGNER_STRUCTURES {
 
     output:
     tuple val (id), path ("${id}.progressive.${align_method}.${tree_method}.aln"), emit: alignmentFile
+    tuple val (id), path ("${id}.progressive.${align_method}.${tree_method}.aln"), path ("*.lib"), emit: libraryFile
     path ".command.trace", emit: metricFile
     path "${id}.progressive.${align_method}.${tree_method}.tcs", emit: tcs_file
-    tuple val (id), val(align_method), file(seqs), file(structures), file("${id}.progressive.${align_method}.${tree_method}.aln"), emit: alignmentFiles
+    //tuple val (id), val(align_method), file(seqs), path(structures), file("${id}.progressive.${align_method}.${tree_method}.aln"), emit: alignmentFiles
 
     script:
     template "${path_templates}/progressive_align/prog_${align_method}.sh"
@@ -213,7 +214,7 @@ process COMPACT_ALIGNER {
 process FS_ALIGNER {
     container 'luisas/fsmsa:3'
     tag "$id"
-    storeDir "${params.outdir}/fs_benchmark/$id/${id}.regressive_fs_analysis.${library_method}.${tree_method}"
+    storeDir "${params.outdir}/alignments/$id/${id}.regressive_fs_analysis.${library_method}.${tree_method}"
     label 'process_medium'
 
     input:
@@ -224,6 +225,7 @@ process FS_ALIGNER {
     output:
 
     tuple val (id), path ("${id}.*.aln"), emit: alignmentFile
+    tuple val (id), path ("${id}.*.aln"), path ("${id}.*.lib"), emit: libraryFile
     path ".command.trace", emit: metricFile
 
 
@@ -299,4 +301,27 @@ process STRREG_ALIGNER {
 
     script:
     template "${path_templates}/regfs_align/reg3d_template.sh"
+}
+
+
+process STRREG_ALIGNERTMALIGN {
+    container 'luisas/fsmsa:3'
+    tag "$id"
+    storeDir "${params.outdir}/regressive_3dTmalign/$id/${id}.regressive_3dtmalign_${params.targetDB}.${align_method}.${tree_method}.${bucket_size}"
+    label 'process_medium'
+
+    input:
+    tuple val(id), val(tree_method), file(seqs), file(guide_tree), file(structures)
+    each(align_method)
+    file(methodfile)
+    each bucket_size
+
+
+    output:
+    tuple val (id), path ("${id}.*.aln"), emit: alignmentFile
+    path ".command.trace", emit: metricFile
+
+
+    script:
+    template "${path_templates}/progressive_align/prog_3DCOFFEE.sh"
 }

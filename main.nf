@@ -80,7 +80,7 @@ include { TREE_GENERATION } from './modules/treeGeneration'   params(params)
 include { DYNAMIC_ANALYSIS } from './workflows/dynamic_analysis'    params(params)
 include { REG_ANALYSIS } from './workflows/reg_analysis'        params(params)
 include { PROG_ANALYSIS } from './workflows/prog_analysis'        params(params)
-include { LIBRARIES_ANALYSIS } from './workflows/libraries_analysis'        params(params)
+//include { LIBRARIES_ANALYSIS } from './workflows/libraries_analysis'        params(params)
 include { COMPACT_ANALYSIS } from './workflows/compact_analysis'        params(params)
 include { MSA_3DI_ANALYSIS } from './workflows/msa_3di_analysis'        params(params)
 include { REGFS_ANALYSIS } from './workflows/regfs_analysis'        params(params)
@@ -104,11 +104,12 @@ if(params.targetDB == "AF2_PRED"){
 }else if(params.targetDB == "UniProtKB"){
   structures_ch = Channel.fromPath(params.structures_path)
                           .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName, item] }
-  foldseek_ch = Channel.fromPath(params.foldseek_path, type: 'dir')
-                          .map { item -> [split_if_contains(item.baseName, "-ref", 0) , item.getParent().baseName , item] }
-  foldseek_ch.view()
+}else if( params.targetDB == "PDB" ){
+  structures_ch = Channel.fromPath(params.structures_path)
+                          .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName, item] }
 }
-
+foldseek_ch = Channel.fromPath(params.foldseek_path, type: 'dir')
+                          .map { item -> [split_if_contains(item.baseName, "-ref", 0) , item.getParent().baseName , item] }
  
 // if (params.alphafold) {
 //   //str_path = "${params.af2_db_path}/colabfold/*/*_alphafold.pdb"
@@ -123,7 +124,6 @@ if(params.targetDB == "AF2_PRED"){
 //                          .map { item -> [split_if_contains(item.getParent().baseName, "-ref", 0) , item.baseName.replace("_header", ""), item] }
 // }
 
-
 // Tokenize params
 tree_method = params.tree_methods.tokenize(',')
 align_method = params.align_methods.tokenize(',')
@@ -137,11 +137,16 @@ dynamicSlaveAln = params.dynamicSlaveAln.tokenize(',')
 if(params.matrix){
   matrix = Channel.fromPath(params.matrix)
 }
-methodfile_path = "${path_templates}/method_files/${params.library_methods}.txt"
+methodfile_path = "${path_templates}/method_files/{$params.library_methods}.txt"
 methodfile = Channel.fromPath(methodfile_path)
+
 methodfile_3d_path = "${path_templates}/method_files/tmalign_3dcoffee.txt"
 methodfile_3d = Channel.fromPath(methodfile_3d_path)
 
+foldseek_ch.view()
+print("------------------ ${params.structures_path} ------------------")
+
+structures_ch.view()
 /*
  * main script flow
  */
@@ -166,9 +171,9 @@ workflow pipeline {
       DYNAMIC_ANALYSIS(seqs_and_trees, refs_ch, tree_method, bucket_list, dynamicMasterAln, dynamicSlaveAln, dynamicX, structures_ch)
     }
 
-    if (params.libraries_test){
-      LIBRARIES_ANALYSIS(seqs_and_trees, refs_ch, library_method, tree_method, structures_ch, matrix)
-    }
+    // if (params.libraries_test){
+    //   LIBRARIES_ANALYSIS(seqs_and_trees, refs_ch, library_method, tree_method, structures_ch, matrix)
+    // }
     
     if (params.compact_analysis){
       COMPACT_ANALYSIS(seqs_and_trees, refs_ch, align_method, tree_method, bucket_list)
@@ -191,6 +196,25 @@ workflow pipeline {
 
 workflow {
   pipeline()
+}
+
+
+/*
+ * completion handler
+ */
+ workflow.onComplete {
+
+     def msg = """\
+         Pipeline execution summary
+         ---------------------------
+         Completed at: ${workflow.complete}
+         Duration    : ${workflow.duration}
+         Success     : ${workflow.success}
+         workDir     : ${workflow.workDir}
+         exit status : ${workflow.exitStatus}
+         """
+         .stripIndent()
+
 }
 
 

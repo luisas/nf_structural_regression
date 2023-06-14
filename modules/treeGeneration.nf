@@ -6,7 +6,7 @@ path_templates = set_templates_path()
 process TREE_GENERATION {
     container 'edgano/tcoffee:pdb'
     tag "$tree_method on $id"
-    storeDir "${params.outdir}/trees/${id}/${id}.${tree_method}"
+    storeDir "${params.treedir}/trees/${id}/${id}.${tree_method}"
     label "process_medium"
 
     input:

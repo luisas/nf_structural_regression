@@ -4,7 +4,7 @@ params.outdir = 'results'
 process EVAL_ALIGNMENT {
     container 'luisas/structural_regression:7'
     tag "EVAL_ALIGNMENT on $id"
-    storeDir "${params.outdir}/evaluation/score/"
+    storeDir "${params.outdir}/evaluation/score/${test_alignment.baseName}"
     label "process_low"
 
     input:
@@ -73,6 +73,32 @@ process TCS {
 
     t_coffee -infile \$input -evaluate -output=score_ascii -outfile "${test_alignment.baseName}.tcs"
 
+    """
+}
+
+process TCS_ON_LIB {
+    container 'luisas/structural_regression:20'
+    tag "TCS on $id - ${test_alignment.baseName}"
+    storeDir "${params.outdir}/evaluation/tcs/"
+    label "process_low"
+
+    input:
+    tuple  val(id), file (test_alignment), file(lib)
+
+    output:
+    path ("${test_alignment.baseName}.tcs"), emit: tcs_score
+
+    script:
+    """
+
+    # Bad hack to circumvent t_coffee bug
+    # Issue described already in: https://github.com/cbcrg/tcoffee/issues/3
+    # Add an A in front of filename if the file begins with A
+    filename=${test_alignment.fileName}
+    first_letter_filename=\${filename:0:1}
+    if [ "\$first_letter_filename" == "A" ]; then input="A"\$filename; else input=\$filename;  fi
+
+    t_coffee -infile \$input -evaluate -output=score_ascii -lib \$lib -outfile "${test_alignment.baseName}.tcs"
     """
 }
 
@@ -171,7 +197,7 @@ process EVAL_IRMSD{
   label "process_low"
 
   input:
-  tuple  val(id), file (msa), file (structures)
+  tuple  val(id), file(msa), file(structures)
 
   output:
   path ("${msa.baseName}.total_irmsd"), emit: irmsd_summary
@@ -188,6 +214,29 @@ process EVAL_IRMSD{
   """
 }
 
+process EVAL_LIB{
+
+  container 'luisas/structural_regression:7'
+  tag "EVAL_ALIGNMENT_LIB on $id"
+  storeDir  "${params.outdir}/evaluation/library/"
+  label "process_low"
+
+  input:
+  tuple  val(id), file(msa), file(library)
+
+  output:
+  tuple val(id), path ("${msa.baseName}.score_ascii"), path("${msa.baseName}.html" ), emit: lib_summary
+
+  script: 
+  """
+  filename=${msa}
+  first_letter_filename=\${filename:0:1}
+  if [ "\$first_letter_filename" == "A" ]; then input="A"${msa}; else input=${msa};  fi
+
+  t_coffee -infile \$input  -lib $library -evaluate -output score_html -outfile ${msa.baseName}.html
+  t_coffee -infile \$input  -lib $library -evaluate -output score_ascii -outfile ${msa.baseName}.score_ascii
+  """
+}
 
 
 

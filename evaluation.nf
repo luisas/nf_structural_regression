@@ -45,7 +45,12 @@ if(params.targetDB == "UniProtKB"){
   structures_ch = Channel.fromPath(params.structures_path)
                           .map { it -> [split_if_contains(it.getParent().getParent().baseName, "-ref", 0), it] }
                           .groupTuple(by:0)
+}else if(params.targetDB == "PDB"){
+  structures_ch = Channel.fromPath(params.structures_path)
+                          .map { it -> [split_if_contains(it.getParent().getParent().baseName, "-ref", 0), it] }
+                          .groupTuple(by:0)
 }
+
 
 /*
  * main script flow

@@ -232,10 +232,10 @@ process ADD_HEADER{
   label "process_low"
 
   input:
-  tuple val (fam_name), val(seq_id), path (af2_pdb)
+  tuple val (fam_name), val(db_id), val(seq_id), path (af2_pdb)
 
   output:
-	tuple val(fam_name), val(seq_id), path ("${seq_id}_header.pdb"), emit: pdb
+	tuple val(fam_name), val(db_id), path ("${seq_id}_header.pdb"), emit: pdb
 
 
   script:
@@ -255,7 +255,7 @@ process RENAME_PDB{
   label "process_low"
 
   input:
-  tuple val (fam_name), val(seq_id), path (pdb_header)
+  tuple val(fam_name), val(seq_id), path (pdb_header)
 
   output:
 	tuple val(fam_name), val(seq_id), path ("${seq_id}.pdb"), emit: pdbs

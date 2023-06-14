@@ -1,1 +1,1 @@
-t_coffee -seq $input -method proba_pair -template_file SELF_E_ -template_dir_E_ FULLPATH/TEMPDIR -outfile $output -fs_matrix FULLPATH/3di.mat -output fasta_aln
+t_coffee -seq $input -method proba_pair -outfile $output -out_lib lib.txt -output fasta_aln
