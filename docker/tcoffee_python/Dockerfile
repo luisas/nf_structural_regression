@@ -1,5 +1,8 @@
-FROM ubuntu:16.04
-MAINTAINER Luisa Santus <luisa.santus95@gmail.com>
+FROM ubuntu:18.04 as base
+
+ENV TZ=Asia/Dubai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 
 RUN apt-get update && \
     apt-get -y install gcc g++ gfortran && \
@@ -7,17 +10,14 @@ RUN apt-get update && \
       ed \
       less \
       vim-tiny \
+      vim \
       wget \
       git \
-      python \
       build-essential \
       cmake \
       curl \
       libargtable2-0 \
       ca-certificates \
-      libpng12-0 \
-      python-biopython \
-      python-numpy \
       ruby \
       python-setuptools \
       default-jdk \
@@ -37,27 +37,28 @@ RUN apt-get update && \
     	libiomp-dev
 
 
+RUN apt-get install -y make build-essential libssl-dev zlib1g-dev \
+libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev \
+libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev \
+libgdbm-dev libnss3-dev libedit-dev libc6-dev
+
+RUN wget https://www.python.org/ftp/python/3.6.15/Python-3.6.15.tgz && \
+   tar -xzf Python-3.6.15.tgz &&\
+    cd Python-3.6.15 && \
+    ./configure --enable-optimizations  -with-lto  --with-pydebug && \
+    make -j 8 && \
+    make altinstall
+
+
 # Install TCOFFEE
-RUN git clone https://github.com/luisas/tcoffee.git tcoffee && \
+RUN git clone https://github.com/cbcrg/tcoffee.git tcoffee && \
     cd tcoffee && \
-    git checkout 090eb75b73e562d6e1ad82a365965be23a12e7b8 && \
+    git checkout ec0be9b62914c24d8c405d3ac7270ff340eab5cd && \
     cd t_coffee/src && \
     make t_coffee && \
     cp t_coffee /bin/.
 
-
-
-RUN apt-get update && apt-get install -y zlib1g-dev build-essential wget
-
-RUN apt-get update && apt-get -y upgrade
-
-RUN apt-get install -y python3-pip
-
-RUN pip3 install --upgrade "pip < 21.0"
-
-RUN pip3 install pandas biopython 
-
-RUN pip3 install itertools
+RUN pip3 install itertools pandas numpy biopython 
 
 
 #

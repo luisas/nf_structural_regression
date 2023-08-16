@@ -24,7 +24,6 @@ def split_if_contains(s,sep, index ){
 
 }
 
-
 def static String remove_suffix( String self ) {
     if(self.contains("_")){
       return self.split("_")[0]

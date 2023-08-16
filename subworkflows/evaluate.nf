@@ -1,4 +1,3 @@
-
 include {EVAL_ALIGNMENT; EASEL_INFO; TCS; SIM; GAPS_PROGRESSIVE; EVAL_IRMSD; EVAL_LIB}    from '../modules/evaluate_alignment.nf'
 include { split_if_contains } from '../modules/functions.nf'
 
